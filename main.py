@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Response, Request
+import time
+from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-import time
 
 app = FastAPI()
 
@@ -41,15 +41,26 @@ def home():
 @app.get("/stream")
 def stream(search_query: str, topNDocuments: int = 5, sessionID: str = "1234567890"):
     """
-    Streaming endpoint that repeats 'search_query' three times,
-    simulating SSE (Server-Sent Events) output.
+    Streaming endpoint that splits the given `search_query` text into tokens
+    and sends them SSE-style, each line prefixed with 'data:'.
+    At the end, it appends a few 'citation' lines to mimic the format legacy API.
     """
 
     def event_generator():
-        # Send the query three times with slight pauses
-        for _ in range(3):
-            yield f"data: {search_query}\n\n"
-            time.sleep(1)  # Quick pause to simulate streaming chunks
+        # Split query into tokens (whitespace).
+        tokens = search_query.split()
+
+        # Simulate streaming each token as type: response
+        for token in tokens:
+            chunk = {"type": "response", "data": token}
+            yield f"data: {chunk}\n\n"
+            time.sleep(0.2)  # quick pause to mimic streaming
+
+        # Append a few citations to mimic what you showed in screenshots
+        citations = [{"type": "citation", "data": str(i+1) * (i+1)} for i in range(min(topNDocuments, 10))]
+        for c in citations:
+            yield f"data: {c}\n\n"
+            time.sleep(0.2)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -61,6 +72,5 @@ def add_rating(req: RatingRequest):
     Returns a success indicator along with the submitted data.
     """
     return {
-        "status": "success",
-        "received_data": req.dict()
+        "message": "Rating added successfully"
     }
