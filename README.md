@@ -28,6 +28,13 @@ To install and run this mock API, follow these steps:
 
    This will start the server on `http://127.0.0.1:8000`.
 
+## API Documentation
+
+Once running, view the interactive API documentation at:
+
+- [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+
 ## Usage
 
 You can interact with the API using curl or any HTTP client. Here are some example requests:
@@ -42,6 +49,14 @@ You can interact with the API using curl or any HTTP client. Here are some examp
 
     ```bash
     curl -N "http://127.0.0.1:8000/stream?search_query=what%20is%20the%20meaning%20of%20life&topNDocuments=5&sessionID=12345"
+    ```
+
+3. Rating endpoint:
+
+    ```bash
+    curl -X POST "http://127.0.0.1:8000/add_rating" \
+        -H "Content-Type: application/json" \
+        -d '{"chat_id":"123","search_query":"test","rating":5}'
     ```
 
 ### Parameters
@@ -61,4 +76,3 @@ data: {'type': 'citation', 'data': 'citation_id'}
 
 - Response data contains individual words from the search query
 - Citation data contains citation identifiers
-
