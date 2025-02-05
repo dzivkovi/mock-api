@@ -70,8 +70,8 @@ You can interact with the API using curl or any HTTP client. Here are some examp
 The API returns a stream of data in the following format:
 
 ```log
-data: {'type': 'response', 'data': 'word'}
-data: {'type': 'citation', 'data': 'citation_id'}
+data: {"type": "response", "data": "word"}
+data: {"type": "citation", "data": "citation_id"}
 ```
 
 - Response data contains individual words from the search query

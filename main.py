@@ -1,3 +1,4 @@
+import json
 import time
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -53,15 +54,12 @@ def stream(search_query: str, topNDocuments: int = 5, sessionID: str = "12345678
         # Simulate streaming each token as type: response
         for token in tokens:
             chunk = {"type": "response", "data": token}
-            yield f"data: {chunk}\n\n"
-            time.sleep(0.2)  # quick pause to mimic streaming
-
-        # Append a few citations to mimic what you showed in screenshots
+            yield f"data: {json.dumps(chunk)}\n\n"
+            time.sleep(0.1)  # quick pause to mimic streaming
         citations = [{"type": "citation", "data": str(i+1) * (i+1)} for i in range(min(topNDocuments, 10))]
-        for c in citations:
-            yield f"data: {c}\n\n"
-            time.sleep(0.2)
-
+        for citation in citations:
+            yield f"data: {json.dumps(citation)}\n\n"
+            time.sleep(0.1)
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
