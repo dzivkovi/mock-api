@@ -48,8 +48,8 @@ def stream(search_query: str, topNDocuments: int = 5, sessionID: str = "12345678
     """
 
     def event_generator():
-        # Split query into tokens (whitespace).
-        tokens = search_query.split()
+        # Split query into tokens (every 6 characters).
+        tokens = [search_query[i:i+6] for i in range(0, len(search_query), 6)]
 
         # Simulate streaming each token as type: response
         for token in tokens:
