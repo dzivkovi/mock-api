@@ -81,22 +81,22 @@ def stream(
         description="A unique identifier for this streaming session.",
         example="user123-20250410"
     ),
-    citations: int = Query(
-        5,      # Default value (replaced topNDocuments)
+    topNDocuments: int = Query(
+        5,      # Default value
         description="Number of citations to include (range: 1-20).",
         ge=1,   # Minimum value
         le=20,  # Maximum value
         example=5
     ),
     llm: LLMEnum = Query(
-        LLMEnum.GPT4O,  # Default to GPT-4o
+        None,   # Optional parameter (can be null)
         description="The large language model to use for processing.",
-        example="gpt-4o"
+        example=LLMEnum.GPT4O
     ),
     language: LanguageEnum = Query(
         None,   # Optional parameter (can be null)
         description="Programming language context (if applicable).",
-        example="Python"
+        example=LanguageEnum.PYTHON
     )
 ):
     """
@@ -121,7 +121,7 @@ def stream(
                 "session": sessionID,
                 "model": llm,
                 "language": language,
-                "citations_requested": citations
+                "citations_requested": topNDocuments
             }
         }
         yield f"data: {json.dumps(metadata)}\n\n"
@@ -136,12 +136,12 @@ def stream(
             yield f"data: {json.dumps(chunk)}\n\n"
             time.sleep(0.1)  # quick pause to mimic streaming
 
-        # Generate citations based on the citations parameter (renamed from topNDocuments)
+        # Generate citations based on the topNDocuments parameter
         # Also incorporate the language parameter if provided
         citation_prefix = f"{language} " if language else ""
 
         # Use min() to respect the original limit of 10 while allowing the parameter's range to be 1-20
-        citation_count = min(citations, 10)
+        citation_count = min(topNDocuments, 20)
         citations_data = [
             {"type": "citation", "data": f"{citation_prefix}Citation {i+1}: " + str(i+1) * (i+1)}
             for i in range(citation_count)
