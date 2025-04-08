@@ -158,8 +158,13 @@ def stream(
         yield f"data: {json.dumps(metadata)}\n\n"
         time.sleep(0.1)  # Small delay to separate metadata from content
 
+        # Make the esond request to the LLM (simulated here)
+        search_response = search_query + ". " + """
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+""" + search_query  # Simulated response
+
         # Split query into tokens (every 6 characters)
-        tokens = [search_query[i:i+6] for i in range(0, len(search_query), 6)]
+        tokens = [search_response[i:i+6] for i in range(0, len(search_response), 6)]
 
         # Simulate streaming each token as type: response
         for token in tokens:
