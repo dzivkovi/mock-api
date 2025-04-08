@@ -1,6 +1,7 @@
 import json
 import time
 from enum import Enum
+from typing import Optional
 from fastapi import FastAPI, Query, Body
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -94,6 +95,7 @@ def home():
     response_description="A text/event-stream containing generated content chunks and citations."
 )
 def stream(
+    # --- Mandatory Parameters ---
     search_query: str = Query(
         ...,    # Required parameter (no default)
         description="The search query text to process and stream back as tokens.",
@@ -104,6 +106,7 @@ def stream(
         description="A unique identifier for this streaming session.",
         example="user123-session456"  # Example value
     ),
+    # --- Optional Parameters ---
     topNDocuments: int = Query(
         5,      # Default value
         description="Number of citations to include (range: 1-20).",
@@ -114,10 +117,15 @@ def stream(
         LLMEnum.GPT4O,  # Default to GPT-4o
         description="The large language model to use for processing.",
     ),
-    language: LanguageEnum = Query(
+    language: Optional[LanguageEnum] = Query(
         None,   # Optional parameter (can be null)
         description="Programming language context (if applicable).",
         example=LanguageEnum.PYTHON  # Example value for UI
+    ),
+    subfolder: Optional[str] = Query(   # Use Optional[str] for type hint
+        None,   # Default to None to make it optional
+        description="Optional subfolder path to narrow the search context to a single project or folder.",
+        example="myproject/folder/path"     # Example value for UI
     )
 ):
     """
@@ -126,9 +134,10 @@ def stream(
     Parameters:
     - **search_query**: (string, required) The text to process and stream back
     - **sessionID**: (string, required) Unique session identifier
-    - **citations**: (integer, default=5) Number of citation entries (1-20)
+    - **topNDocuments**: (integer, default=5) Number of citation entries (1-20)
     - **llm**: (string, default='gpt-4o') AI model to use ('gpt-3.5-turbo', 'gpt-4', 'gpt-4o')
     - **language**: (string, optional) Programming language filter ('Python', 'Go', 'C++', 'Java')
+    - **subfolder**: (string, optional) Subfolder path to narrow search context
 
     Returns a streaming response with tokens and citations.
     """
@@ -142,6 +151,7 @@ def stream(
                 "session": sessionID,
                 "model": llm,
                 "language": language,
+                "subfolder": subfolder,
                 "citations_requested": topNDocuments
             }
         }
