@@ -1,0 +1,321 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Streaming API with Enhanced Documentation",
+        "description": "API providing streaming responses with configurable options.",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/health": {
+            "get": {
+                "summary": "Health Check",
+                "description": "Health check endpoint.\nReturns a simple JSON indicating OK status.",
+                "operationId": "health_check_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/": {
+            "get": {
+                "summary": "Login",
+                "description": "Mock login endpoint.",
+                "operationId": "login__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/home": {
+            "get": {
+                "summary": "Home",
+                "description": "Mock auth redirect endpoint.",
+                "operationId": "home_home_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/stream": {
+            "get": {
+                "summary": "Stream data based on a search query",
+                "description": "Streaming endpoint that splits the given search query text into tokens and sends them in a Server-Sent Event style, with citations appended at the end.",
+                "operationId": "stream_stream_get",
+                "parameters": [
+                    {
+                        "name": "search_query",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "The search query text to process and stream back as tokens.",
+                            "title": "Search Query"
+                        },
+                        "description": "The search query text to process and stream back as tokens.",
+                        "example": "How to implement streaming in FastAPI"
+                    },
+                    {
+                        "name": "sessionID",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "A unique identifier for this streaming session.",
+                            "title": "Sessionid"
+                        },
+                        "description": "A unique identifier for this streaming session.",
+                        "example": "user123-session456"
+                    },
+                    {
+                        "name": "topNDocuments",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 20,
+                            "minimum": 1,
+                            "description": "Number of citations to include (range: 1-20).",
+                            "default": 5,
+                            "title": "Topndocuments"
+                        },
+                        "description": "Number of citations to include (range: 1-20)."
+                    },
+                    {
+                        "name": "llm",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/LLMEnum",
+                            "description": "The large language model to use for processing.",
+                            "default": "gpt-4o"
+                        },
+                        "description": "The large language model to use for processing."
+                    },
+                    {
+                        "name": "language",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/LanguageEnum"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Programming language context (if applicable).",
+                            "title": "Language"
+                        },
+                        "description": "Programming language context (if applicable).",
+                        "example": "Python"
+                    },
+                    {
+                        "name": "subfolder",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Optional subfolder path to narrow the search context to a single project or folder.",
+                            "title": "Subfolder"
+                        },
+                        "description": "Optional subfolder path to narrow the search context to a single project or folder.",
+                        "example": "myproject/folder/path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A text/event-stream containing generated content chunks and citations.",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/add_rating": {
+            "post": {
+                "summary": "Record a user's rating for a search query",
+                "description": "Accepts user feedback in the form of a 1-5 rating for a specific search query in a chat session.",
+                "operationId": "add_rating_add_rating_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RatingRequest"
+                            },
+                            "example": {
+                                "chat_id": "user123-session456",
+                                "search_query": "How to implement streaming in FastAPI",
+                                "rating": 4
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Confirmation that the rating was recorded successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "LLMEnum": {
+                "type": "string",
+                "enum": [
+                    "gpt-3.5-turbo",
+                    "gpt-4",
+                    "gpt-4o"
+                ],
+                "title": "LLMEnum",
+                "description": "Enumeration for supported Large Language Models."
+            },
+            "LanguageEnum": {
+                "type": "string",
+                "enum": [
+                    "Python",
+                    "Go",
+                    "C++",
+                    "Java"
+                ],
+                "title": "LanguageEnum",
+                "description": "Enumeration for supported programming languages."
+            },
+            "RatingRequest": {
+                "properties": {
+                    "chat_id": {
+                        "type": "string",
+                        "title": "Chat Id",
+                        "description": "The unique identifier for the chat session being rated."
+                    },
+                    "search_query": {
+                        "type": "string",
+                        "title": "Search Query",
+                        "description": "The search query text that was used in this conversation.",
+                        "example": "How to implement streaming in FastAPI"
+                    },
+                    "rating": {
+                        "type": "integer",
+                        "maximum": 5.0,
+                        "minimum": 1.0,
+                        "title": "Rating",
+                        "description": "The user's rating on a scale of 1-5 (1=lowest, 5=highest).",
+                        "example": 4
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "chat_id",
+                    "search_query",
+                    "rating"
+                ],
+                "title": "RatingRequest",
+                "description": "Request model for the rating endpoint."
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
+}
