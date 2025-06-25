@@ -60,6 +60,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# --- MCP Integration (commented out - requires standalone server) ---
+# The FastMCP framework is designed to run as a standalone server
+# For single-port deployment, we'd need to implement MCP protocol manually
+# For now, keeping this as reference for the working standalone implementation
+
 
 # --- Original Endpoints (preserved) ---
 @app.get("/health")
