@@ -7,6 +7,8 @@ This repository contains a mock API that simulates a streaming response for sear
 - Streaming response for search queries
 - Simulated response and citation data
 - Configurable number of top documents (citations)
+- MCP (Model Context Protocol) server integration
+- Multiple MCP implementations: universal auto-generated and focused Teamcenter
 
 ## Installation
 
@@ -76,3 +78,44 @@ data: {"type": "citation", "data": "citation_id"}
 
 - Response data contains individual words from the search query
 - Citation data contains citation identifiers
+
+## MCP Server Integration
+
+This repository includes MCP (Model Context Protocol) servers that allow LLM clients to interact with the mock Teamcenter API:
+
+### Available MCP Servers
+
+1. **Focused Teamcenter MCP** (`basic_mcp.py`):
+   - Single-purpose server for Teamcenter knowledge search
+   - Runs on port 8002
+   - Tool: `teamcenter_search` for knowledge base queries
+
+2. **Universal Auto-Generated MCP** (`auto_openapi_mcp.py`):
+   - Auto-generates MCP tools from any OpenAPI specification
+   - Runs on port 8001
+   - Demonstrates universal MCP capability
+
+### Running MCP Servers
+
+```bash
+# Terminal 1: Main API
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+# Terminal 2: Focused Teamcenter MCP
+python basic_mcp.py
+
+# Terminal 3: Universal MCP (optional)
+python auto_openapi_mcp.py
+```
+
+### Testing MCP Integration
+
+```bash
+# Run all MCP tests
+pytest tests/ -v
+
+# Test specific MCP server
+pytest tests/test_teamcenter_mcp.py -v
+```
+
+The MCP servers provide LLM clients with structured access to the mock Teamcenter knowledge base, enabling AI assistants to search and retrieve information programmatically.

@@ -56,7 +56,16 @@ mypy main.py
 
 ### Testing
 
-No test framework is currently configured - check with the user for testing requirements before adding tests.
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_teamcenter_mcp.py -v
+
+# Run with coverage (if installed)
+pytest tests/ --cov=main --cov=basic_mcp --cov=auto_openapi_mcp
+```
 
 ## API Architecture
 
@@ -77,7 +86,7 @@ The application consists of a single FastAPI module (`main.py`) with:
 - `.flake8`: Line length 140, excludes common directories
 - `.pylintrc`: Comprehensive linting configuration with 140 char line limit
 - `mypy.ini`: Type checking with external library ignore rules
-- `requrements.txt`: Contains fastapi and uvicorn dependencies (note: filename has typo)
+- `requrements.txt`: Contains fastapi, uvicorn, fastmcp, httpx, and pytest dependencies (note: filename has typo)
 
 ## API Endpoints
 
@@ -86,6 +95,32 @@ The application consists of a single FastAPI module (`main.py`) with:
 - `GET /health`: Health check
 - `GET /`: Mock login endpoint  
 - `GET /home`: Mock home/redirect endpoint
+
+## MCP Server Architecture
+
+The repository includes two MCP (Model Context Protocol) server implementations:
+
+### Files
+- `basic_mcp.py`: Focused Teamcenter Knowledge Base MCP server (port 8002)
+- `auto_openapi_mcp.py`: Universal auto-generated MCP server (port 8001)
+- `tests/test_teamcenter_mcp.py`: Tests for focused MCP server
+- `tests/test_auto_mcp.py`: Tests for auto-generated MCP server
+- `tests/test_mcp_simple.py`: Basic MCP functionality tests
+
+### Architecture Decision
+Two-server approach chosen over in-process mounting:
+- Port 8000: Original mock Teamcenter API
+- Port 8001: Universal auto-generated MCP server  
+- Port 8002: Focused Teamcenter MCP server
+
+This separation provides better architecture (microservices), easier deployment to Azure App Service, and cleaner separation of concerns.
+
+### Running MCP Servers
+```bash
+# Start all three servers in separate terminals:
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload  # Terminal 1
+python auto_openapi_mcp.py                             # Terminal 2 (optional)
+python basic_mcp.py                                    # Terminal 3 (recommended)
 
 ## Code Style
 
