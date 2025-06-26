@@ -1,0 +1,15 @@
+{
+  "servers": {
+    "teamcenter-kb": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/home/daniel/work/mock-api",
+        "run",
+        "python",
+        "basic_mcp_stdio.py"
+      ]
+    }
+  }
+}

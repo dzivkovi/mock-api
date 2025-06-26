@@ -15,6 +15,7 @@ This repository contains a mock API that simulates a streaming response for sear
 To install and run this mock API, follow these steps:
 
 1. **Install UV** (if not already installed):
+
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
@@ -22,6 +23,7 @@ To install and run this mock API, follow these steps:
 2. **Clone the repository**
 
 3. **Install dependencies and run**:
+
    ```bash
    # Install dependencies (automatic with UV)
    uv sync
@@ -127,6 +129,50 @@ uv run pytest tests/ -v
 
 # Test specific functionality
 uv run python test_uv_migration.py
+```
+
+### IDE Integration
+
+#### VS Code MCP Configuration
+
+Add to `.vscode/mcp.json` in your project:
+
+```json
+{
+  "servers": {
+    "teamcenter-kb": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/path/to/mock-api",
+        "run",
+        "python",
+        "basic_mcp_stdio.py"
+      ]
+    }
+  }
+}
+```
+
+#### Continue.dev Configuration
+
+Add to `$HOME/.continue/config.json`:
+
+```json
+{
+  "experimental": {
+    "modelContextProtocolServers": [
+      {
+        "transport": {
+          "type": "stdio",
+          "command": "uv",
+          "args": ["--directory", "/path/to/mock-api", "run", "python", "basic_mcp_stdio.py"]
+        }  
+      }
+    ]
+  }
+}
 ```
 
 The MCP servers provide LLM clients with structured access to the mock Teamcenter knowledge base, enabling AI assistants to search and retrieve information programmatically.

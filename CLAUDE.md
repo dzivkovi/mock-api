@@ -70,9 +70,6 @@ uv run pytest tests/ -v
 
 # Run specific test file
 uv run pytest tests/test_teamcenter_mcp.py -v
-
-# Quick migration test
-uv run python test_uv_migration.py
 ```
 
 ## API Architecture
@@ -127,8 +124,8 @@ This separation provides better architecture (microservices), easier deployment 
 ```bash
 # Start all servers with UV in separate terminals:
 uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload  # Terminal 1
-uv run python auto_openapi_mcp.py                             # Terminal 2 (optional)
 uv run python basic_mcp_stdio.py                              # Terminal 3 (recommended)
+```
 
 ## Code Style
 
