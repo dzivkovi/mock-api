@@ -1,0 +1,25 @@
+[project]
+name = "mock-api"
+version = "1.0.0"
+description = "FastAPI-based mock API server with MCP integration for Teamcenter knowledge base simulation"
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "fastmcp",
+    "httpx",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]

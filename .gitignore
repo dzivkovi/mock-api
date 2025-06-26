@@ -3,6 +3,7 @@
 
 # VSCode
 .vscode
+.continue
 
 ### Flask ###
 instance/*
@@ -135,6 +136,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# UV
+uv.lock
 
 # Spyder project settings
 .spyderproject
