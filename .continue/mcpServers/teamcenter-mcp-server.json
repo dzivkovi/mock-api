@@ -1,0 +1,13 @@
+{
+"experimental": {
+    "modelContextProtocolServers": [
+      {
+        "transport": {
+          "type": "stdio",
+          "command": "uv",
+          "args": ["--directory", "C:/Users/danie/Documents/mock-api", "run", "python", "basic_mcp_stdio.py"]
+        }  
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+name: Teamcenter MCP server
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: Teamcenter MCP server
+    command: uv
+    args:
+      - --directory
+      - C:/Users/danie/Documents/mock-api
+      - run
+      - python
+      - basic_mcp_stdio.py
+    env: {}

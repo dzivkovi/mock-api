@@ -2,8 +2,13 @@
 # https://www.python-boilerplate.com/py3+flask+gitignore+logging+unittest
 
 # VSCode
-.vscode
-.continue
+.vscode/*
+!.vscode/
+!.vscode/mcp.json
+.continue/*
+!.continue/
+!.continue/mcpServers/
+!.continue/mcpServers/*
 
 ### Flask ###
 instance/*
