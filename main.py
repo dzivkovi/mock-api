@@ -2,8 +2,9 @@ import json
 import time
 from enum import Enum
 from typing import Optional
-from fastapi import FastAPI, Query, Body
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Query, Body, Header, HTTPException, Depends
+from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 
 
@@ -35,7 +36,7 @@ class RatingRequest(BaseModel):
         description="The search query text that was used in this conversation.",
         example="How to implement streaming in FastAPI"  # Same example as stream route
     )
-    rating: int = Field(
+    rating: float = Field(
         ...,  # Required field
         description="The user's rating on a scale of 1-5 (1=lowest, 5=highest).",
         example=4,  # Example rating
@@ -59,6 +60,9 @@ app = FastAPI(
     description="API providing streaming responses with configurable options.",
     version="1.0.0",
 )
+
+# Security scheme
+security = HTTPBearer()
 
 # --- MCP Integration (commented out - requires standalone server) ---
 # The FastMCP framework is designed to run as a standalone server
@@ -89,7 +93,57 @@ def home():
     """
     Mock auth redirect endpoint.
     """
-    return {"message": "Home redirect mock"}
+    return HTMLResponse(content="<html><body><h1>Home Page</h1></body></html>")
+
+
+@app.get("/unauthorized")
+def unauthorized():
+    """
+    Unauthorized page for non-Siemens users.
+
+    Args:
+        request (Request): The incoming HTTP request.
+
+    Returns:
+        TemplateResponse: Renders the unauthorized.html template.
+    """
+    return HTMLResponse(content="<html><body><h1>Unauthorized</h1><p>You are not authorized to access this resource.</p></body></html>")
+
+
+@app.post("/api/login")
+def api_login(
+    authorization: str = Header(..., description="Authorization header"),
+    x_refresh_token: Optional[str] = Header(None, alias="X-Refresh-Token")
+):
+    """
+    API login endpoint that accepts authorization credentials.
+    """
+    # Mock authentication - in real implementation would validate credentials
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization format")
+    
+    return {
+        "access_token": "mock_access_token_" + str(int(time.time())),
+        "refresh_token": "mock_refresh_token_" + str(int(time.time())),
+        "token_type": "bearer",
+        "expires_in": 3600
+    }
+
+
+@app.get("/token")
+def token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    sid: Optional[str] = Query(None, description="Session ID")
+):
+    """
+    Token validation endpoint.
+    """
+    # Mock token validation
+    return {
+        "valid": True,
+        "token": credentials.credentials,
+        "sid": sid
+    }
 
 
 @app.get(
@@ -100,37 +154,13 @@ def home():
     response_description="A text/event-stream containing generated content chunks and citations."
 )
 def stream(
-    # --- Mandatory Parameters ---
     search_query: str = Query(
         ...,    # Required parameter (no default)
-        description="The search query text to process and stream back as tokens.",
-        example="How to implement streaming in FastAPI"  # Example value
+        description="The search query text to process and stream back as tokens."
     ),
-    sessionID: str = Query(
-        ...,    # Required parameter (no default)
-        description="A unique identifier for this streaming session.",
-        example="user123-session456"  # Example value
-    ),
-    # --- Optional Parameters ---
     topNDocuments: int = Query(
         5,      # Default value
-        description="Number of citations to include (range: 1-20).",
-        ge=1,   # Minimum value
-        le=20,  # Maximum value
-    ),
-    llm: LLMEnum = Query(
-        LLMEnum.GPT4O,  # Default to GPT-4o
-        description="The large language model to use for processing.",
-    ),
-    language: Optional[LanguageEnum] = Query(
-        None,   # Optional parameter (can be null)
-        description="Programming language context (if applicable).",
-        example=LanguageEnum.PYTHON  # Example value for UI
-    ),
-    subfolder: Optional[str] = Query(   # Use Optional[str] for type hint
-        None,   # Default to None to make it optional
-        description="Optional subfolder path to narrow the search context to a single project or folder.",
-        example="myproject/folder/path"     # Example value for UI
+        description="Number of citations to include."
     )
 ):
     """
@@ -138,11 +168,7 @@ def stream(
 
     Parameters:
     - **search_query**: (string, required) The text to process and stream back
-    - **sessionID**: (string, required) Unique session identifier
-    - **topNDocuments**: (integer, default=5) Number of citation entries (1-20)
-    - **llm**: (string, default='gpt-4o') AI model to use ('gpt-3.5-turbo', 'gpt-4', 'gpt-4o')
-    - **language**: (string, optional) Programming language filter ('Python', 'Go', 'C++', 'Java')
-    - **subfolder**: (string, optional) Subfolder path to narrow search context
+    - **topNDocuments**: (integer, default=5) Number of citation entries
 
     Returns a streaming response with tokens and citations.
     """
@@ -153,10 +179,6 @@ def stream(
             "type": "metadata",
             "data": {
                 "query": search_query,
-                "session": sessionID,
-                "model": llm,
-                "language": language,
-                "subfolder": subfolder,
                 "citations_requested": topNDocuments
             }
         }
@@ -178,13 +200,9 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
             time.sleep(0.1)  # quick pause to mimic streaming
 
         # Generate citations based on the topNDocuments parameter
-        # Also incorporate the language parameter if provided
-        citation_prefix = f"{language} " if language else ""
-
-        # Use min() to respect the original limit of 10 while allowing the parameter's range to be 1-20
         citation_count = min(topNDocuments, 20)
         citations_data = [
-            {"type": "citation", "data": f"{citation_prefix}Citation {i+1}: " + str(i+1) * (i+1)}
+            {"type": "citation", "data": f"Citation {i+1}: " + str(i+1) * (i+1)}
             for i in range(citation_count)
         ]
 
