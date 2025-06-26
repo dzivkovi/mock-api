@@ -14,21 +14,32 @@ This repository contains a mock API that simulates a streaming response for sear
 
 To install and run this mock API, follow these steps:
 
-1. Clone the repository
-
-2. Install the required dependencies:
-
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-3. Start the API server:
-
+1. **Install UV** (if not already installed):
    ```bash
-   uvicorn main:app --reload
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+2. **Clone the repository**
+
+3. **Install dependencies and run**:
+   ```bash
+   # Install dependencies (automatic with UV)
+   uv sync
+
+   # Start the API server
+   uv run uvicorn main:app --reload
    ```
 
    This will start the server on `http://127.0.0.1:8000`.
+
+### Alternative: Quick Run (No Installation)
+
+UV can handle everything automatically:
+
+```bash
+# Run directly without manual dependency management
+uv run uvicorn main:app --reload
+```
 
 ## API Documentation
 
@@ -99,23 +110,23 @@ This repository includes MCP (Model Context Protocol) servers that allow LLM cli
 
 ```bash
 # Terminal 1: Main API
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 # Terminal 2: Focused Teamcenter MCP
-python basic_mcp.py
+uv run python basic_mcp_stdio.py
 
 # Terminal 3: Universal MCP (optional)
-python auto_openapi_mcp.py
+uv run python auto_openapi_mcp.py
 ```
 
 ### Testing MCP Integration
 
 ```bash
 # Run all MCP tests
-pytest tests/ -v
+uv run pytest tests/ -v
 
-# Test specific MCP server
-pytest tests/test_teamcenter_mcp.py -v
+# Test specific functionality
+uv run python test_uv_migration.py
 ```
 
 The MCP servers provide LLM clients with structured access to the mock Teamcenter knowledge base, enabling AI assistants to search and retrieve information programmatically.

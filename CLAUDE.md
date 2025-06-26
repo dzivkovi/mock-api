@@ -16,55 +16,63 @@ This is a FastAPI-based mock API server that simulates streaming responses for s
 
 ## Development Setup
 
-### Virtual Environment
+### UV Package Management
 
-The project uses a Python virtual environment. Use these bash aliases (defined in ~/.bashrc):
-
-```bash
-mkv  # Create virtual environment (python -m venv venv)
-va   # Activate virtual environment (source venv/bin/activate)  
-vp   # Upgrade pip (pip install --upgrade pip)
-```
+The project uses UV for fast, reliable dependency management. No virtual environment setup needed!
 
 ### Installation
 
 ```bash
-mkv                              # Create venv
-va                               # Activate venv
-vp                               # Upgrade pip
-pip install -r requrements.txt  # Install dependencies (note: filename has typo)
+# Install UV (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies (automatic)
+uv sync
 ```
 
 ### Running the Server
 
 ```bash
-uvicorn main:app --reload
+uv run uvicorn main:app --reload
 ```
 
 Server runs on <http://127.0.0.1:8000>
 
+### Quick Commands
+
+```bash
+# Run any script with dependencies
+uv run python script.py
+
+# Run tests
+uv run pytest tests/
+
+# Start MCP server
+uv run python basic_mcp_stdio.py
+```
+
 ### Code Quality
 
 ```bash
-# Linting
-flake8 main.py
-pylint main.py
+# Linting (if flake8/pylint added to project)
+uv run flake8 main.py
+uv run pylint main.py
 
-# Type checking
-mypy main.py
+# Type checking (if mypy added to project)
+uv run mypy main.py
 ```
 
 ### Testing
 
 ```bash
 # Run all tests
-pytest tests/ -v
+uv run pytest tests/ -v
 
 # Run specific test file
-pytest tests/test_teamcenter_mcp.py -v
+uv run pytest tests/test_teamcenter_mcp.py -v
 
-# Run with coverage (if installed)
-pytest tests/ --cov=main --cov=basic_mcp --cov=auto_openapi_mcp
+# Quick migration test
+uv run python test_uv_migration.py
 ```
 
 ## API Architecture
@@ -86,7 +94,7 @@ The application consists of a single FastAPI module (`main.py`) with:
 - `.flake8`: Line length 140, excludes common directories
 - `.pylintrc`: Comprehensive linting configuration with 140 char line limit
 - `mypy.ini`: Type checking with external library ignore rules
-- `requrements.txt`: Contains fastapi, uvicorn, fastmcp, httpx, and pytest dependencies (note: filename has typo)
+- `pyproject.toml`: Modern Python project configuration with UV-managed dependencies (fastapi, uvicorn, fastmcp, httpx, pytest)
 
 ## API Endpoints
 
@@ -117,10 +125,10 @@ This separation provides better architecture (microservices), easier deployment 
 
 ### Running MCP Servers
 ```bash
-# Start all three servers in separate terminals:
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload  # Terminal 1
-python auto_openapi_mcp.py                             # Terminal 2 (optional)
-python basic_mcp.py                                    # Terminal 3 (recommended)
+# Start all servers with UV in separate terminals:
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload  # Terminal 1
+uv run python auto_openapi_mcp.py                             # Terminal 2 (optional)
+uv run python basic_mcp_stdio.py                              # Terminal 3 (recommended)
 
 ## Code Style
 
@@ -129,3 +137,9 @@ python basic_mcp.py                                    # Terminal 3 (recommended
 - PascalCase for classes
 - Comprehensive docstrings for all endpoints
 - Type hints throughout
+
+# important-instruction-reminders
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+NEVER sign commits with Claude authorship - use default git authorship only.
