@@ -1,11 +1,19 @@
 import json
 import time
+import uuid
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional
-from fastapi import FastAPI, Query, Body, Header, HTTPException, Depends
-from fastapi.responses import StreamingResponse, HTMLResponse
+from typing import Optional, Dict
+from fastapi import FastAPI, Query, Body, Header, HTTPException, Depends, Request, Cookie
+from fastapi.responses import StreamingResponse, HTMLResponse, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 # --- Enums for choices ---
@@ -61,8 +69,103 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Add CORS middleware to handle browser requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, be more specific
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    
+    # Log incoming request
+    logger.info(f"🔍 {request.method} {request.url}")
+    logger.info(f"   Headers: {dict(request.headers)}")
+    
+    if request.method in ["POST", "PUT", "PATCH"]:
+        try:
+            body = await request.body()
+            if body:
+                logger.info(f"   Body: {body.decode()}")
+        except:
+            pass
+    
+    response = await call_next(request)
+    
+    # Log response
+    process_time = time.time() - start_time
+    logger.info(f"✅ Response: {response.status_code} ({process_time:.3f}s)")
+    
+    return response
+
 # Security scheme
 security = HTTPBearer()
+
+# Session storage (in-memory for mock)
+class SessionInfo:
+    def __init__(self, session_id: str, access_token: str, expires_at: datetime):
+        self.session_id = session_id
+        self.access_token = access_token
+        self.expires_at = expires_at
+        self.created_at = datetime.now()
+
+# Global session store (sessionId -> SessionInfo)
+session_store: Dict[str, SessionInfo] = {}
+
+def generate_session_id() -> str:
+    """Generate a unique session ID."""
+    return str(uuid.uuid4()).replace('-', '')
+
+def create_session(access_token: str) -> SessionInfo:
+    """Create a new session with 55-minute expiry."""
+    session_id = generate_session_id()
+    expires_at = datetime.now() + timedelta(minutes=55)  # Match Azure AD token lifetime
+    session_info = SessionInfo(session_id, access_token, expires_at)
+    session_store[session_id] = session_info
+    return session_info
+
+def get_session(session_id: str) -> Optional[SessionInfo]:
+    """Get session info by session ID."""
+    session_info = session_store.get(session_id)
+    if session_info and datetime.now() < session_info.expires_at:
+        return session_info
+    elif session_info:
+        # Session expired, remove it
+        del session_store[session_id]
+    return None
+
+def parse_codesess_cookie(cookie_header: str) -> Optional[str]:
+    """Parse codesess session ID from cookie header."""
+    if not cookie_header:
+        return None
+    
+    # Handle multiple cookies: "codesess=abc123; other=value"
+    cookies = [c.strip() for c in cookie_header.split(';')]
+    for cookie in cookies:
+        if cookie.startswith('codesess='):
+            return cookie.split('=', 1)[1]
+    return None
+
+def require_auth(request: Request) -> SessionInfo:
+    """Dependency to require valid authentication."""
+    cookie_header = request.headers.get('cookie')
+    if not cookie_header:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    session_id = parse_codesess_cookie(cookie_header)
+    if not session_id:
+        raise HTTPException(status_code=401, detail="Invalid session cookie")
+    
+    session_info = get_session(session_id)
+    if not session_info:
+        raise HTTPException(status_code=401, detail="Session expired or invalid")
+    
+    return session_info
 
 # --- MCP Integration (commented out - requires standalone server) ---
 # The FastMCP framework is designed to run as a standalone server
@@ -112,21 +215,39 @@ def unauthorized():
 
 @app.post("/api/login")
 def api_login(
+    response: Response,
     authorization: str = Header(..., description="Authorization header"),
     x_refresh_token: Optional[str] = Header(None, alias="X-Refresh-Token")
 ):
     """
-    API login endpoint that accepts authorization credentials.
+    API login endpoint that accepts Azure AD Bearer tokens and returns session cookies.
+    
+    This mimics the real Teamcenter API authentication flow:
+    1. Client sends Azure AD Bearer token
+    2. Server validates token (mocked - we accept any Bearer token)
+    3. Server creates session and returns codesess cookie
+    4. Client uses codesess cookie for subsequent API calls
     """
-    # Mock authentication - in real implementation would validate credentials
+    # Mock authentication - accept any Bearer token
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid authorization format")
     
+    # Extract the Bearer token (in real implementation, this would be validated with Azure AD)
+    bearer_token = authorization.split(" ", 1)[1]
+    
+    # Create a new session
+    session_info = create_session(bearer_token)
+    
+    # Set the codesess cookie in the response (exactly what the client expects)
+    cookie_value = f"codesess={session_info.session_id}; HttpOnly; Path=/; Max-Age=3300; SameSite=Lax"
+    response.headers["Set-Cookie"] = cookie_value
+    
+    # Also return JSON response (though client primarily uses the cookie)
     return {
-        "access_token": "mock_access_token_" + str(int(time.time())),
-        "refresh_token": "mock_refresh_token_" + str(int(time.time())),
-        "token_type": "bearer",
-        "expires_in": 3600
+        "message": "Authentication successful",
+        "session_id": session_info.session_id,
+        "expires_at": session_info.expires_at.isoformat(),
+        "token_type": "session"
     }
 
 
@@ -161,10 +282,13 @@ def stream(
     topNDocuments: int = Query(
         5,      # Default value
         description="Number of citations to include."
-    )
+    ),
+    session: SessionInfo = Depends(require_auth)  # Require valid authentication
 ):
     """
     Streaming endpoint that processes a search query and returns tokens with citations.
+    
+    This endpoint requires authentication via codesess session cookie.
 
     Parameters:
     - **search_query**: (string, required) The text to process and stream back
@@ -218,21 +342,26 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
     description="Accepts user feedback in the form of a 1-5 rating for a specific search query in a chat session.",
     response_description="Confirmation that the rating was recorded successfully."
 )
-def add_rating(req: RatingRequest = Body(
-    ...,
-    example={
-        "chat_id": "user123-session456",
-        "search_query": "How to implement streaming in FastAPI",
-        "rating": 4
-    }
-)):
+def add_rating(
+    req: RatingRequest = Body(
+        ...,
+        example={
+            "chat_id": "user123-session456",
+            "search_query": "How to implement streaming in FastAPI",
+            "rating": 4
+        }
+    ),
+    session: SessionInfo = Depends(require_auth)
+):
     """
     Records a user rating for a specific search query.
+    
+    This endpoint requires authentication via codesess session cookie.
 
     Parameters:
     - **chat_id**: (string, required) Unique identifier for the chat session
     - **search_query**: (string, required) The search query that was rated
-    - **rating**: (integer, required) Rating on a scale of 1-5
+    - **rating**: (float, required) Rating on a scale of 1-5
 
     Returns a success confirmation message.
     """
