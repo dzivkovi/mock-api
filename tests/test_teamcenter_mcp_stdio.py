@@ -111,7 +111,9 @@ def test_vscode_mcp_configuration():
             for server_name in teamcenter_servers:
                 server_config = servers[server_name]
                 assert server_config.get("type") == "stdio"
-                assert "basic_mcp_stdio.py" in str(server_config.get("args", []))
+                # Check for either basic_mcp_stdio.py or auth_mcp_stdio.py
+                args_str = str(server_config.get("args", []))
+                assert "mcp_stdio.py" in args_str, f"No MCP stdio server found in args: {args_str}"
 
 
 def test_required_dependencies():
