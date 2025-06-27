@@ -52,18 +52,29 @@ Once running, view the interactive API documentation at:
 
 ## Usage
 
-You can interact with the API using curl or any HTTP client. Here are some example requests:
+You can interact with the API using curl or any HTTP client. **Note: The streaming endpoint now requires authentication.**
 
-1. Basic search query:
+1. **First, authenticate to get a session cookie**:
 
     ```bash
-    curl -X 'GET' 'http://127.0.0.1:8000/stream?search_query=meaning%20of%20life%3F&topNDocuments=3&sessionID=12345' -H 'accept: application/json'
+    curl -X POST "http://127.0.0.1:8000/api/login" \
+        -H "Authorization: Bearer your-azure-ad-token" \
+        -c cookies.txt
     ```
 
-2. Search query with more top documents:
+2. **Basic search query with authentication**:
 
     ```bash
-    curl -N "http://127.0.0.1:8000/stream?search_query=what%20is%20the%20meaning%20of%20life&topNDocuments=5&sessionID=12345"
+    curl -X GET "http://127.0.0.1:8000/stream?search_query=meaning%20of%20life&topNDocuments=3" \
+        -b cookies.txt \
+        -H "accept: text/event-stream"
+    ```
+
+3. **Search query with more top documents**:
+
+    ```bash
+    curl -N "http://127.0.0.1:8000/stream?search_query=what%20is%20the%20meaning%20of%20life&topNDocuments=5" \
+        -b cookies.txt
     ```
 
 3. Rating endpoint:
@@ -76,9 +87,15 @@ You can interact with the API using curl or any HTTP client. Here are some examp
 
 ### Parameters
 
-- `search_query`: The search query (URL-encoded)
-- `topNDocuments`: The number of citation documents to return
-- `sessionID`: A unique identifier for the session
+- `search_query`: The search query (URL-encoded) - **Required**
+- `topNDocuments`: The number of citation documents to return (default: 5)
+
+### Authentication
+
+The API now requires session-based authentication:
+
+1. Obtain session cookie via `/api/login` with Azure AD Bearer token
+2. Include session cookie in subsequent requests to `/stream`
 
 ### Response Format
 
@@ -108,12 +125,18 @@ This repository includes MCP (Model Context Protocol) servers that allow LLM cli
    - Runs on port 8001
    - Demonstrates universal MCP capability
 
-### Running MCP Servers
+## Run with API server for full coverage
 
 ```bash
 # Terminal 1: Main API
 uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
 
+### Running MCP Servers
+
+These are *normally* executed by your IDEs (like VScode GitHub Copilot or Continue.dev), but you can run them manually for testing:
+
+```bash
 # Terminal 2: Focused Teamcenter MCP
 uv run python basic_mcp_stdio.py
 
@@ -124,11 +147,11 @@ uv run python auto_openapi_mcp.py
 ### Testing MCP Integration
 
 ```bash
-# Run all MCP tests
-uv run pytest tests/ -v
+# Run only authentication tests (all pass)
+uv run pytest tests/test_auth_flow.py -v
 
-# Test specific functionality
-uv run python test_uv_migration.py
+# Run only MCP STDIO tests (mostly pass)
+uv run pytest tests/test_teamcenter_mcp_stdio.py -v
 ```
 
 ### IDE Integration
@@ -174,5 +197,21 @@ Add to `$HOME/.continue/config.json`:
   }
 }
 ```
+
+#### Sample Questions to Ask Your MCP Server
+
+Try these questions to test the Teamcenter MCP integration:
+
+1. **Basic Search**: "Search the Teamcenter knowledge base for technical information and documentation on Java and C++ based products"
+
+2. **Product Documentation**: "Find documentation about CAD model versioning and lifecycle management in Teamcenter"
+
+3. **API Integration**: "Search for information about REST API endpoints for part data retrieval"
+
+4. **Workflow Queries**: "Look up documentation on workflow approval processes for engineering changes"
+
+5. **User Management**: "Find information about user role permissions and access control in Teamcenter"
+
+6. **Data Import/Export**: "Search for technical guides on bulk data import and export procedures"
 
 The MCP servers provide LLM clients with structured access to the mock Teamcenter knowledge base, enabling AI assistants to search and retrieve information programmatically.
