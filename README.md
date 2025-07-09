@@ -113,21 +113,40 @@ data: {"type": "citation", "data": "citation_id"}
 
 This repository includes MCP (Model Context Protocol) servers that allow LLM clients to interact with the mock Teamcenter API:
 
-### Authenticated MCP Server
+### Teamcenter MCP Server (Simplified)
 
-**Teamcenter MCP Server** (`auth_mcp_stdio.py`):
+**Single File Solution** (`auth_mcp_stdio.py`):
 - Production-ready authenticated server for Teamcenter knowledge search  
 - Automatic session management and authentication
 - Tool: `teamcenter_search` for secure knowledge base queries
+- **Simplified**: Single file with `--base-url` argument support
+- **Universal**: Works across all IDEs and platforms
 
-### Running the Server
+### MCP Server Usage
 
 ```bash
-# Start the authenticated API server:
+# Help
+uv run python auth_mcp_stdio.py --help
+
+# Default (localhost:8000)
+uv run python auth_mcp_stdio.py
+
+# Custom URL
+uv run python auth_mcp_stdio.py --base-url https://teamcenter.company.com
+
+# Environment variable
+export TEAMCENTER_API_URL=https://teamcenter.company.com
+uv run python auth_mcp_stdio.py
+```
+
+### Running the Mock API Server
+
+```bash
+# Start the mock API server:
 uv run uvicorn main:app --reload
 ```
 
-**MCP Integration**: The MCP server starts automatically via VS Code when configured in `.vscode/mcp.json` - no manual startup needed.
+**MCP Integration**: The MCP server starts automatically via IDE when configured - no manual startup needed.
 
 ### Testing (Clean Setup)
 
@@ -139,25 +158,19 @@ uv run pytest tests/test_auth_flow.py -v
 uv run pytest tests/test_teamcenter_mcp_stdio.py -v
 ```
 
-### IDE Integration
+### IDE Integration (Simplified)
 
 #### VS Code MCP Configuration
 
-Add to `.vscode/mcp.json` in your project:
+Update `.vscode/mcp.json`:
 
 ```json
 {
   "servers": {
-    "teamcenter-kb": {
+    "teamcenter": {
       "type": "stdio",
       "command": "uv",
-      "args": [
-        "--directory",
-        "/path/to/mock-api",
-        "run",
-        "python",
-        "basic_mcp_stdio.py"
-      ]
+      "args": ["run", "python", "auth_mcp_stdio.py", "--base-url", "http://localhost:8000"]
     }
   }
 }
@@ -165,23 +178,42 @@ Add to `.vscode/mcp.json` in your project:
 
 #### Continue.dev Configuration
 
-Add to `$HOME/.continue/config.json`:
+Update `~/.continue/config.json`:
 
 ```json
 {
   "experimental": {
-    "modelContextProtocolServers": [
-      {
-        "transport": {
-          "type": "stdio",
-          "command": "uv",
-          "args": ["--directory", "/path/to/mock-api", "run", "python", "basic_mcp_stdio.py"]
-        }  
+    "modelContextProtocolServers": [{
+      "transport": {
+        "type": "stdio",
+        "command": "uv",
+        "args": ["run", "python", "auth_mcp_stdio.py", "--base-url", "http://localhost:8000"]
       }
-    ]
+    }]
   }
 }
 ```
+
+#### JetBrains IDEs Configuration
+
+Add to `~/.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "teamcenter": {
+      "command": "uv",
+      "args": ["run", "python", "auth_mcp_stdio.py", "--base-url", "http://localhost:8000"]
+    }
+  }
+}
+```
+
+#### Cross-Platform Notes
+
+- **Windows/WSL**: Use `--directory` argument for cross-filesystem access
+- **Production**: Replace `http://localhost:8000` with your Teamcenter API URL
+- **Environment**: Set `TEAMCENTER_API_URL` instead of using `--base-url`
 
 #### Sample Questions to Ask Your MCP Server
 
@@ -200,3 +232,15 @@ Try these questions to test the Teamcenter MCP integration:
 6. **Data Import/Export**: "Search for technical guides on bulk data import and export procedures"
 
 The MCP servers provide LLM clients with structured access to the mock Teamcenter knowledge base, enabling AI assistants to search and retrieve information programmatically.
+
+## Simplified Architecture
+
+This solution follows the **"Less is More"** design principle:
+
+- **Single file** (`auth_mcp_stdio.py`) with command-line arguments
+- **Direct execution** via `uv run python` (no complex packaging)
+- **Universal IDE compatibility** with the same command everywhere
+- **Cross-platform** works identically on Windows, Linux, and macOS
+- **Configurable endpoints** via `--base-url` argument or environment variables
+
+Perfect example of Antoine de Saint-Exupéry's principle: *"Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away."*

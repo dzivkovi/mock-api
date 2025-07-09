@@ -1,22 +1,30 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "mock-api"
-version = "1.0.0"
-description = "FastAPI-based mock API server with MCP integration for Teamcenter knowledge base simulation"
+name = "teamcenter-mcp-server"
+version = "0.1.0"
+description = "Authenticated MCP server for Teamcenter Knowledge Base APIs"
 readme = "README.md"
 requires-python = ">=3.10"
 
 dependencies = [
-    "fastapi",
-    "uvicorn",
-    "fastmcp",
-    "httpx",
+    "fastmcp>=0.1.0",
+    "httpx>=0.24.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-asyncio",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
 ]
+
+[project.scripts]
+teamcenter-mcp-server = "auth_mcp_stdio:main"
+
+[tool.setuptools]
+py-modules = ["auth_mcp_stdio"]
 
 [tool.uv]
 dev-dependencies = [

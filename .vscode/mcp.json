@@ -3,13 +3,7 @@
     "teamcenter": {
       "type": "stdio",
       "command": "uv",
-      "args": [
-        "--directory",
-        "/home/daniel/work/mock-api",
-        "run",
-        "python",
-        "auth_mcp_stdio.py"
-      ]
+      "args": ["run", "python", "auth_mcp_stdio.py", "--base-url", "http://localhost:8000"]
     }
   }
 }

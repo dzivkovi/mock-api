@@ -11,6 +11,8 @@ from typing import Optional
 import re
 import logging
 import sys
+import argparse
+import os
 
 # Set up debug logging
 logging.basicConfig(
@@ -22,16 +24,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create authenticated MCP server
-mcp = FastMCP(name="Teamcenter")
+# Global MCP server - will be initialized in main()
+mcp = None
 
 class AuthSession:
     """Manages authentication session for the MCP server"""
     
-    def __init__(self):
+    def __init__(self, base_url: str = "http://127.0.0.1:8000"):
         self.session_cookie: Optional[str] = None
         self.expires_at: Optional[datetime] = None
-        self.base_url = "http://127.0.0.1:8000"
+        self.base_url = base_url.rstrip('/')  # Remove trailing slash
         logger.info(f"🔧 AuthSession initialized with base_url: {self.base_url}")
     
     def is_session_valid(self) -> bool:
@@ -120,10 +122,9 @@ class AuthSession:
             "Content-Type": "application/json"
         }
 
-# Global authentication session
-auth_session = AuthSession()
+# Global authentication session - will be initialized in main()
+auth_session = None
 
-@mcp.tool()
 async def teamcenter_search(search_query: str, topNDocuments: int = 5) -> str:
     """Search the Teamcenter knowledge base for technical information and documentation.
     
@@ -194,7 +195,6 @@ async def teamcenter_search(search_query: str, topNDocuments: int = 5) -> str:
     except Exception as e:
         return f"❌ Error calling Teamcenter API: {str(e)}"
 
-@mcp.tool()
 async def teamcenter_health_check() -> str:
     """Check if the Teamcenter KB API is healthy and authentication is working"""
     try:
@@ -217,7 +217,6 @@ async def teamcenter_health_check() -> str:
     except Exception as e:
         return f"❌ Cannot reach Teamcenter KB API: {str(e)}"
 
-@mcp.tool()
 async def teamcenter_session_info() -> str:
     """Get current authentication session information"""
     if not auth_session.session_cookie:
@@ -229,6 +228,56 @@ async def teamcenter_session_info() -> str:
     
     return f"🔐 Session ID: {session_id_preview}\n📅 Expires: {expires_info}\n✅ Status: {is_valid}"
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the MCP server with command-line argument support"""
+    parser = argparse.ArgumentParser(
+        description="Teamcenter MCP Server - Authenticated Model Context Protocol server"
+    )
+    parser.add_argument(
+        '--base-url', 
+        type=str,
+        help='Base URL of the Teamcenter API (defaults to TEAMCENTER_API_URL env var or http://localhost:8000)'
+    )
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='teamcenter-mcp-server 0.1.0'
+    )
+    
+    # Add usage examples to help
+    parser.epilog = """
+Examples:
+  # Use with local mock API (default)
+  uv run python auth_mcp_stdio.py
+
+  # Use with production Teamcenter API
+  uv run python auth_mcp_stdio.py --base-url https://teamcenter.company.com
+
+  # Use environment variable
+  export TEAMCENTER_API_URL=https://teamcenter.company.com
+  uv run python auth_mcp_stdio.py
+    """
+    
+    args = parser.parse_args()
+    
+    # Initialize MCP server after argument parsing
+    global mcp
+    mcp = FastMCP(name="Teamcenter")
+    
+    # Re-register tools (since mcp was None when decorators ran)
+    mcp.tool(teamcenter_search)
+    mcp.tool(teamcenter_health_check)
+    mcp.tool(teamcenter_session_info)
+    
+    # Determine base URL from args, env var, or default
+    base_url = args.base_url or os.environ.get('TEAMCENTER_API_URL') or 'http://localhost:8000'
+    
+    # Initialize global auth session
+    global auth_session
+    auth_session = AuthSession(base_url)
+    
     # Use STDIO transport - VS Code will manage this process
     mcp.run(transport="stdio")
+
+if __name__ == "__main__":
+    main()

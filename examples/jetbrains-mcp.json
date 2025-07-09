@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "teamcenter": {
+      "command": "uv",
+      "args": ["run", "python", "auth_mcp_stdio.py", "--base-url", "https://teamcenter.company.com"]
+    }
+  }
+}
