@@ -5,10 +5,6 @@
 .vscode/*
 !.vscode/
 !.vscode/mcp.json
-.continue/*
-!.continue/
-!.continue/mcpServers/
-!.continue/mcpServers/*
 
 ### Flask ###
 instance/*

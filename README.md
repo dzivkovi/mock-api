@@ -1,246 +1,187 @@
-# Mock API Server
+# Teamcenter MCP Server
 
-This repository contains a mock API that simulates a streaming response for search queries. It's designed to mimic the behavior of a real API that might be used in a question-answering or search system.
+A complete solution for integrating AI assistants with Teamcenter Knowledge Base APIs. Includes both a mock API server for development and a deployable MCP server for production use.
 
-## Features
+## What You Get
 
-- Streaming response for search queries
-- Simulated response and citation data
-- Configurable number of top documents (citations)
-- MCP (Model Context Protocol) server integration
-- Multiple MCP implementations: universal auto-generated and focused Teamcenter
+- **Mock API Server**: Test server that simulates Teamcenter Knowledge Base responses
+- **MCP Server**: Production-ready server that connects AI assistants to Teamcenter APIs
+- **Universal Deployment**: Works across all IDEs and platforms via UVX
 
-## Installation
+## Quick Start
 
-To install and run this mock API, follow these steps:
-
-1. **Install UV** (if not already installed):
-
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-
-2. **Clone the repository**
-
-3. **Install dependencies and run**:
-
-   ```bash
-   # Install dependencies (automatic with UV)
-   uv sync
-
-   # Start the API server
-   uv run uvicorn main:app --reload
-   ```
-
-   This will start the server on `http://127.0.0.1:8000`.
-
-### Alternative: Quick Run (No Installation)
-
-UV can handle everything automatically:
-
+### 1. Install UV (if not already installed)
 ```bash
-# Run directly without manual dependency management
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### 2. Clone and Start Mock API Server
+```bash
+# Start the mock API server (for development/testing)
 uv run uvicorn main:app --reload
 ```
+Server runs on `http://127.0.0.1:8000`
 
-## API Documentation
-
-Once running, view the interactive API documentation at:
-
-- [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-
-## Usage
-
-You can interact with the API using curl or any HTTP client. **Note: The streaming endpoint now requires authentication.**
-
-1. **First, authenticate to get a session cookie**:
-
-    ```bash
-    curl -X POST "http://127.0.0.1:8000/api/login" \
-        -H "Authorization: Bearer your-azure-ad-token" \
-        -c cookies.txt
-    ```
-
-2. **Basic search query with authentication**:
-
-    ```bash
-    curl -X GET "http://127.0.0.1:8000/stream?search_query=meaning%20of%20life&topNDocuments=3" \
-        -b cookies.txt \
-        -H "accept: text/event-stream"
-    ```
-
-3. **Search query with more top documents**:
-
-    ```bash
-    curl -N "http://127.0.0.1:8000/stream?search_query=what%20is%20the%20meaning%20of%20life&topNDocuments=5" \
-        -b cookies.txt
-    ```
-
-3. Rating endpoint:
-
-    ```bash
-    curl -X POST "http://127.0.0.1:8000/add_rating" \
-        -H "Content-Type: application/json" \
-        -d '{"chat_id":"123","search_query":"test","rating":5}'
-    ```
-
-### Parameters
-
-- `search_query`: The search query (URL-encoded) - **Required**
-- `topNDocuments`: The number of citation documents to return (default: 5)
-
-### Authentication
-
-The API now requires session-based authentication:
-
-1. Obtain session cookie via `/api/login` with Azure AD Bearer token
-2. Include session cookie in subsequent requests to `/stream`
-
-### Response Format
-
-The API returns a stream of data in the following format:
-
-```log
-data: {"type": "response", "data": "word"}
-data: {"type": "citation", "data": "citation_id"}
-```
-
-- Response data contains individual words from the search query
-- Citation data contains citation identifiers
-
-## MCP Server Integration
-
-This repository includes MCP (Model Context Protocol) servers that allow LLM clients to interact with the mock Teamcenter API:
-
-### Teamcenter MCP Server (Simplified)
-
-**Single File Solution** (`auth_mcp_stdio.py`):
-- Production-ready authenticated server for Teamcenter knowledge search  
-- Automatic session management and authentication
-- Tool: `teamcenter_search` for secure knowledge base queries
-- **Simplified**: Single file with `--base-url` argument support
-- **Universal**: Works across all IDEs and platforms
-
-### MCP Server Usage
-
+### 3. Build MCP Server Package
 ```bash
-# Help
-uv run python auth_mcp_stdio.py --help
-
-# Default (localhost:8000)
-uv run python auth_mcp_stdio.py
-
-# Custom URL
-uv run python auth_mcp_stdio.py --base-url https://teamcenter.company.com
-
-# Environment variable
-export TEAMCENTER_API_URL=https://teamcenter.company.com
-uv run python auth_mcp_stdio.py
+# Build the deployable MCP server
+uv build
 ```
+Creates: `dist/teamcenter_mcp_server-0.1.0-py3-none-any.whl`
 
-### Running the Mock API Server
-
+### 4. Validate Your Setup
 ```bash
-# Start the mock API server:
-uv run uvicorn main:app --reload
+# Run the deployment validation test
+python test_mcp_contract.py
 ```
+This validates that your UVX wheel deployment is ready for IDE integration.
 
-**MCP Integration**: The MCP server starts automatically via IDE when configured - no manual startup needed.
+## Deployment Options
 
-### Testing (Clean Setup)
+### Option 1: UVX (Recommended - Universal)
 
+**Use the built wheel package anywhere:**
 ```bash
-# Run authentication tests (should all pass)
-uv run pytest tests/test_auth_flow.py -v
-
-# Run MCP STDIO tests (should mostly pass)  
-uv run pytest tests/test_teamcenter_mcp_stdio.py -v
+# From the built wheel (works on any machine)
+uvx --from dist/teamcenter_mcp_server-0.1.0-py3-none-any.whl teamcenter-mcp-server --base-url http://localhost:8000
 ```
 
-### IDE Integration (Simplified)
+**Why UVX is better:**
+- ✅ **No virtual environment conflicts** (Windows/WSL compatible)
+- ✅ **Works anywhere** (just copy the .whl file)
+- ✅ **No installation required** (isolated execution)
 
-#### VS Code MCP Configuration
+### Option 2: Direct Python (Development Only)
 
+**Run directly from source:**
+```bash
+# For development/testing only
+uv run python auth_mcp_stdio.py --base-url http://localhost:8000
+```
+
+## IDE Integration
+
+### VS Code
 Update `.vscode/mcp.json`:
-
 ```json
 {
   "servers": {
     "teamcenter": {
       "type": "stdio",
-      "command": "uv",
-      "args": ["run", "python", "auth_mcp_stdio.py", "--base-url", "http://localhost:8000"]
+      "command": "uvx",
+      "args": ["--from", "dist/teamcenter_mcp_server-0.1.0-py3-none-any.whl", "teamcenter-mcp-server", "--base-url", "http://localhost:8000"]
     }
   }
 }
 ```
 
-#### Continue.dev Configuration
-
+### Continue.dev
 Update `~/.continue/config.json`:
-
 ```json
 {
   "experimental": {
     "modelContextProtocolServers": [{
       "transport": {
         "type": "stdio",
-        "command": "uv",
-        "args": ["run", "python", "auth_mcp_stdio.py", "--base-url", "http://localhost:8000"]
+        "command": "uvx",
+        "args": ["--from", "dist/teamcenter_mcp_server-0.1.0-py3-none-any.whl", "teamcenter-mcp-server", "--base-url", "http://localhost:8000"]
       }
     }]
   }
 }
 ```
 
-#### JetBrains IDEs Configuration
-
+### JetBrains IDEs
 Add to `~/.mcp.json`:
-
 ```json
 {
   "mcpServers": {
     "teamcenter": {
-      "command": "uv",
-      "args": ["run", "python", "auth_mcp_stdio.py", "--base-url", "http://localhost:8000"]
+      "command": "uvx",
+      "args": ["--from", "dist/teamcenter_mcp_server-0.1.0-py3-none-any.whl", "teamcenter-mcp-server", "--base-url", "http://localhost:8000"]
     }
   }
 }
 ```
 
-#### Cross-Platform Notes
+## Testing
 
-- **Windows/WSL**: Use `--directory` argument for cross-filesystem access
-- **Production**: Replace `http://localhost:8000` with your Teamcenter API URL
-- **Environment**: Set `TEAMCENTER_API_URL` instead of using `--base-url`
+### Run All Tests
+```bash
+uv run pytest tests/ -v
+```
 
-#### Sample Questions to Ask Your MCP Server
+### Validate Setup
+```bash
+# Pre-flight check - run this before configuring IDEs
+python test_mcp_contract.py
+```
 
-Try these questions to test the Teamcenter MCP integration:
+**What this tests:**
+- ✅ UVX wheel package works
+- ✅ MCP server initializes correctly
+- ✅ Command-line arguments work
+- ✅ API server connectivity (optional)
 
-1. **Basic Search**: "Search the Teamcenter knowledge base for technical information and documentation on Java and C++ based products"
+**Run this whenever you:**
+- Build a new wheel (`uv build`)
+- Change server configurations
+- Set up on a new machine
 
-2. **Product Documentation**: "Find documentation about CAD model versioning and lifecycle management in Teamcenter"
+## 🚀 Production Deployment
 
-3. **API Integration**: "Search for information about REST API endpoints for part data retrieval"
+**Ready to connect to your real Teamcenter API?** Replace the mock server with your production endpoint:
 
-4. **Workflow Queries**: "Look up documentation on workflow approval processes for engineering changes"
+### Replace Mock URL with Production
+```bash
+# Instead of: --base-url http://localhost:8000
+# Use your real Teamcenter API:
+--base-url https://teamcenter.yourcompany.com
+```
 
-5. **User Management**: "Find information about user role permissions and access control in Teamcenter"
+### Update IDE Configurations
+**VS Code** (`.vscode/mcp.json`):
+```json
+"args": ["--from", "dist/teamcenter_mcp_server-0.1.0-py3-none-any.whl", "teamcenter-mcp-server", "--base-url", "https://teamcenter.yourcompany.com"]
+```
 
-6. **Data Import/Export**: "Search for technical guides on bulk data import and export procedures"
+**Continue.dev** (`~/.continue/config.json`):
+```json
+"args": ["--from", "dist/teamcenter_mcp_server-0.1.0-py3-none-any.whl", "teamcenter-mcp-server", "--base-url", "https://teamcenter.yourcompany.com"]
+```
 
-The MCP servers provide LLM clients with structured access to the mock Teamcenter knowledge base, enabling AI assistants to search and retrieve information programmatically.
+### Alternative: Environment Variable
+```bash
+# Set once, works everywhere
+export TEAMCENTER_API_URL=https://teamcenter.yourcompany.com
 
-## Simplified Architecture
+# Then use without --base-url:
+"args": ["--from", "dist/teamcenter_mcp_server-0.1.0-py3-none-any.whl", "teamcenter-mcp-server"]
+```
 
-This solution follows the **"Less is More"** design principle:
+**🎯 That's it! No mock server needed - connect directly to production.**
 
-- **Single file** (`auth_mcp_stdio.py`) with command-line arguments
-- **Direct execution** via `uv run python` (no complex packaging)
-- **Universal IDE compatibility** with the same command everywhere
-- **Cross-platform** works identically on Windows, Linux, and macOS
-- **Configurable endpoints** via `--base-url` argument or environment variables
+## Usage Examples
 
-Perfect example of Antoine de Saint-Exupéry's principle: *"Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away."*
+Once configured, ask your AI assistant:
+
+- `@MCP check if the Teamcenter knowledge base is healthy`
+- `@MCP search for PLM workflow integration documentation`
+- `@MCP find CAD model versioning guides`
+
+## Files Overview
+
+- **`auth_mcp_stdio.py`**: Main MCP server (single file solution)
+- **`main.py`**: Mock API server for development
+- **`test_mcp_contract.py`**: Deployment validation script
+- **`pyproject.toml`**: Package configuration for `uv build`
+- **`dist/`**: Built wheel packages (created by `uv build`)
+
+## Key Commands
+
+| Command | Purpose |
+|---------|---------|
+| `uv run uvicorn main:app --reload` | Start mock API server |
+| `uv build` | Build MCP server package |
+| `python test_mcp_contract.py` | **Validate setup (run first!)** |
+| `uv run pytest tests/ -v` | Run all tests |
