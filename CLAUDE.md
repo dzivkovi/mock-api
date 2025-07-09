@@ -48,7 +48,7 @@ uv run python script.py
 uv run pytest tests/
 
 # Start MCP server
-uv run python basic_mcp_stdio.py
+uv run python auth_mcp_stdio.py
 ```
 
 ### Code Quality

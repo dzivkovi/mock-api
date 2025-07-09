@@ -3,8 +3,8 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "teamcenter-mcp-server"
-version = "0.1.0"
+name = "teamcenter-mcp-server-test"
+version = "0.1.1"
 description = "Authenticated MCP server for Teamcenter Knowledge Base APIs"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,7 +21,7 @@ dev = [
 ]
 
 [project.scripts]
-teamcenter-mcp-server = "auth_mcp_stdio:main"
+teamcenter-mcp-server-test = "auth_mcp_stdio:main"
 
 [tool.setuptools]
 py-modules = ["auth_mcp_stdio"]

@@ -3,8 +3,8 @@
     "modelContextProtocolServers": [{
       "transport": {
         "type": "stdio",
-        "command": "uv",
-        "args": ["run", "python", "auth_mcp_stdio.py", "--base-url", "https://teamcenter.company.com"]
+        "command": "uvx",
+        "args": ["teamcenter-mcp-server-test", "--base-url", "http://localhost:8000"]
       }
     }]
   }

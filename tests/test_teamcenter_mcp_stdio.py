@@ -117,7 +117,12 @@ def test_vscode_mcp_configuration():
                 # Check for either old stdio file or new teamcenter-mcp-server command
                 command = server_config.get("command", "")
                 args_str = str(server_config.get("args", []))
-                assert ("mcp_stdio.py" in args_str or "teamcenter-mcp-server" in command), f"No MCP server found in command: {command}, args: {args_str}"
+                # Check for either old stdio file, old teamcenter-mcp-server, or new PyPI package
+                assert (
+                    "mcp_stdio.py" in args_str or 
+                    "teamcenter-mcp-server" in command or 
+                    "teamcenter-mcp-server-test" in args_str
+                ), f"No MCP server found in command: {command}, args: {args_str}"
 
 
 def test_required_dependencies():

@@ -1,11 +1,11 @@
-"experimental": {
-    "modelContextProtocolServers": [
-      {
-        "transport": {
-          "type": "stdio",
-          "command": "uvx",
-          "args": ["--from", "\\\\wsl.localhost\\Ubuntu\\home\\daniel\\work\\mock-api\\dist\\teamcenter_mcp_server-0.1.0-py3-none-any.whl", "teamcenter-mcp-server", "--base-url", "http://localhost:8000"]
-        }
+{
+  "experimental": {
+    "modelContextProtocolServers": [{
+      "transport": {
+        "type": "stdio",
+        "command": "uvx",
+        "args": ["teamcenter-mcp-server-test", "--base-url", "http://localhost:8000"]
       }
-    ]
+    }]
   }
+}

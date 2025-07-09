@@ -2,8 +2,8 @@
   "servers": {
     "teamcenter": {
       "type": "stdio",
-      "command": "uv",
-      "args": ["run", "python", "auth_mcp_stdio.py", "--base-url", "http://localhost:8000"]
+      "command": "uvx",
+      "args": ["teamcenter-mcp-server-test", "--base-url", "http://localhost:8000"]
     }
   }
 }
