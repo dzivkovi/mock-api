@@ -8,7 +8,7 @@ This document captures key findings from implementing MCP (Model Context Protoco
 
 **Working Implementation:**
 - **Port 8000:** Original mock Teamcenter API (`main.py`)
-- **Port 8001:** Universal auto-generated MCP server (`auto_openapi_mcp.py`)
+- **Port 8001:** Universal auto-generated MCP server (`auth_openapi_mcp.py`)
 - **Port 8002:** Focused Teamcenter MCP server (`basic_mcp.py`)
 
 ## Key Findings
@@ -40,7 +40,7 @@ app.mount("/mcp", mcp)  # This failed with 500 errors
 
 ### 3. Universal vs. Focused MCP Servers
 
-**Universal Auto-Generated (`auto_openapi_mcp.py`):**
+**Universal Auto-Generated (`auth_openapi_mcp.py`):**
 - ✅ Works with any OpenAPI specification
 - ✅ Zero configuration for basic functionality
 - ✅ Great for prototyping and demos
@@ -90,7 +90,7 @@ app.mount("/mcp", mcp)  # This failed with 500 errors
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 # Terminal 2: Universal MCP (optional)
-python auto_openapi_mcp.py
+python auth_openapi_mcp.py
 
 # Terminal 3: Focused MCP (recommended)
 python basic_mcp.py

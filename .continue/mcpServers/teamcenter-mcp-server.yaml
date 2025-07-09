@@ -6,8 +6,8 @@ mcpServers:
     command: uv
     args:
       - --directory
-      - C:/Users/danie/Documents/mock-api
+      - /home/daniel/work/mock-api
       - run
       - python
-      - basic_mcp_stdio.py
+      - auth_mcp_stdio.py
     env: {}

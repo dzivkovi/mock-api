@@ -50,7 +50,7 @@ After implementing stateful authentication in the mock API and authenticated MCP
 - **`test_mcp_initialize_works`** - Port 8001 connection refused
 - **`test_teamcenter_mcp_initialize`** - Port 8002 connection refused
 - **`test_teamcenter_has_focused_tools`** - Port 8002 connection refused
-  - **Reason**: Tests expect auto_openapi_mcp.py (8001) and basic_mcp.py (8002) running
+  - **Reason**: Tests expect auth_openapi_mcp.py (8001) and basic_mcp.py (8002) running
   - **Impact**: None - we're only using auth_mcp_stdio.py
   - **Fix**: These tests are for deprecated servers
 

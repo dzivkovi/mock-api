@@ -113,44 +113,29 @@ data: {"type": "citation", "data": "citation_id"}
 
 This repository includes MCP (Model Context Protocol) servers that allow LLM clients to interact with the mock Teamcenter API:
 
-### Available MCP Servers
+### Authenticated MCP Server
 
-1. **Focused Teamcenter MCP** (`basic_mcp.py`):
-   - Single-purpose server for Teamcenter knowledge search
-   - Runs on port 8002
-   - Tool: `teamcenter_search` for knowledge base queries
+**Teamcenter MCP Server** (`auth_mcp_stdio.py`):
+- Production-ready authenticated server for Teamcenter knowledge search  
+- Automatic session management and authentication
+- Tool: `teamcenter_search` for secure knowledge base queries
 
-2. **Universal Auto-Generated MCP** (`auto_openapi_mcp.py`):
-   - Auto-generates MCP tools from any OpenAPI specification
-   - Runs on port 8001
-   - Demonstrates universal MCP capability
-
-## Run with API server for full coverage
+### Running the Server
 
 ```bash
-# Terminal 1: Main API
-uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# Start the authenticated API server:
+uv run uvicorn main:app --reload
 ```
 
-### Running MCP Servers
+**MCP Integration**: The MCP server starts automatically via VS Code when configured in `.vscode/mcp.json` - no manual startup needed.
 
-These are *normally* executed by your IDEs (like VScode GitHub Copilot or Continue.dev), but you can run them manually for testing:
-
-```bash
-# Terminal 2: Focused Teamcenter MCP
-uv run python basic_mcp_stdio.py
-
-# Terminal 3: Universal MCP (optional)
-uv run python auto_openapi_mcp.py
-```
-
-### Testing MCP Integration
+### Testing (Clean Setup)
 
 ```bash
-# Run only authentication tests (all pass)
+# Run authentication tests (should all pass)
 uv run pytest tests/test_auth_flow.py -v
 
-# Run only MCP STDIO tests (mostly pass)
+# Run MCP STDIO tests (should mostly pass)  
 uv run pytest tests/test_teamcenter_mcp_stdio.py -v
 ```
 

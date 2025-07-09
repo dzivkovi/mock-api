@@ -10,7 +10,7 @@ When debugging your MCP server in VS Code, you'll see logs in the "OUTPUT" tab u
 [info] Starting server teamcenter
 [info] Connection state: Starting
 [info] Connection state: Running
-[warning] [server stderr] Starting MCP server 'Teamcenter-KB-Auth' with transport 'stdio'
+[warning] [server stderr] Starting MCP server 'Teamcenter' with transport 'stdio'
 [warning] [server stderr] 🔧 AuthSession initialized with base_url: http://127.0.0.1:8000
 [info] Discovered 3 tools
 ```
