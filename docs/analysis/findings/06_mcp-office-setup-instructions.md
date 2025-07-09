@@ -5,7 +5,7 @@
 The working MCP server at home uses `auth_mcp_stdio.py` (authenticated version), not `basic_mcp_stdio.py`. 
 
 **Evidence from logs:**
-- Server name: `'Teamcenter-KB-Auth'` (not basic)
+- Server name: `'Teamcenter'` (clean, simple name)
 - Authentication flow: Session management, login calls, cookie handling
 - File being called: `auth_mcp_stdio.py` (confirmed in git diff)
 
@@ -50,7 +50,7 @@ uv run uvicorn main:app --reload
 
 **VS Code: Select MCP Server**
 - Use "teamcenter" server (not "teamcenter-kb-legacy")
-- Server should show `'Teamcenter-KB-Auth'` in logs
+- Server should show `'Teamcenter'` in logs
 
 ### 4. Path Format Notes
 
@@ -62,7 +62,7 @@ uv run uvicorn main:app --reload
 
 Working MCP server logs should show:
 ```
-Starting MCP server 'Teamcenter-KB-Auth' with transport 'stdio'
+Starting MCP server 'Teamcenter' with transport 'stdio'
 🔧 AuthSession initialized with base_url: http://127.0.0.1:8000
 Discovered 3 tools
 ```

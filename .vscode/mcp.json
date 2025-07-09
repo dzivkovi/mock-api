@@ -5,21 +5,10 @@
       "command": "uv",
       "args": [
         "--directory",
-        "C:/Users/z0052v7s/ws/ghcp/context/mock-api",
+        "/home/daniel/work/mock-api",
         "run",
         "python",
         "auth_mcp_stdio.py"
-      ]
-    },
-    "teamcenter-kb-legacy": {
-      "type": "stdio",
-      "command": "uv",
-      "args": [
-        "--directory",
-        "C:/Users/z0052v7s/ws/ghcp/context/mock-api",
-        "run",
-        "python",
-        "basic_mcp_stdio.py"
       ]
     }
   }

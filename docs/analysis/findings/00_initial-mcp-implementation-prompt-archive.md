@@ -2,7 +2,7 @@
 
 > **Note:** This was the initial prompt that kicked off MCP server development. 
 > The actual implementation evolved to use a two-server architecture instead 
-> of in-process mounting. See `basic_mcp.py` and `auto_openapi_mcp.py` for 
+> of in-process mounting. See `basic_mcp.py` and `auth_openapi_mcp.py` for 
 > the working implementation, and `01_mcp-implementation-findings.md` for lessons learned.
 
 # Original Implement MCP Server Command

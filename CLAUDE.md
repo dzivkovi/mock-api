@@ -106,25 +106,21 @@ The application consists of a single FastAPI module (`main.py`) with:
 The repository includes two MCP (Model Context Protocol) server implementations:
 
 ### Files
-- `basic_mcp.py`: Focused Teamcenter Knowledge Base MCP server (port 8002)
-- `auto_openapi_mcp.py`: Universal auto-generated MCP server (port 8001)
-- `tests/test_teamcenter_mcp.py`: Tests for focused MCP server
-- `tests/test_auto_mcp.py`: Tests for auto-generated MCP server
-- `tests/test_mcp_simple.py`: Basic MCP functionality tests
+- `auth_mcp_stdio.py`: Production-ready authenticated MCP server with session management
+- `tests/test_auth_flow.py`: Tests for authentication system
+- `tests/test_teamcenter_mcp_stdio.py`: Tests for authenticated MCP server
 
 ### Architecture Decision
-Two-server approach chosen over in-process mounting:
-- Port 8000: Original mock Teamcenter API
-- Port 8001: Universal auto-generated MCP server  
-- Port 8002: Focused Teamcenter MCP server
+Single authenticated server approach:
+- Port 8000: Authenticated mock Teamcenter API with session management
+- MCP Server: STDIO transport integrated with VS Code/Continue.dev
 
-This separation provides better architecture (microservices), easier deployment to Azure App Service, and cleaner separation of concerns.
-
-### Running MCP Servers
+### Running the Server
 ```bash
-# Start all servers with UV in separate terminals:
-uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload  # Terminal 1
-uv run python basic_mcp_stdio.py                              # Terminal 3 (recommended)
+# Start the API server:
+uv run uvicorn main:app --reload
+
+# MCP server runs automatically via VS Code (configured in .vscode/mcp.json)
 ```
 
 ## Code Style

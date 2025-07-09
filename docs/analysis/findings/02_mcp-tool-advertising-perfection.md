@@ -60,7 +60,7 @@ async def teamcenter_search(search_query: str, sessionID: str, topNDocuments: in
 - "Find Teamcenter documentation about datasets"
 - "What technical information exists about BMIDE?"
 
-### Auto-Generated MCP (`auto_openapi_mcp.py`)
+### Auto-Generated MCP (`auth_openapi_mcp.py`)
 ```python
 # Auto-generates 5 tools from OpenAPI spec
 # Names: get_health, get_home, get_stream, post_add_rating, get_root

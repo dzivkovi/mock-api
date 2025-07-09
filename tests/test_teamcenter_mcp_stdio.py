@@ -17,25 +17,25 @@ def test_server_imports_cleanly():
     """Test that VS Code can import the server without issues."""
     start_time = time.time()
     
-    import basic_mcp_stdio
+    import auth_mcp_stdio
     
     import_time = time.time() - start_time
     assert import_time < 1.0, f"Import took {import_time}s, too slow for VS Code"
-    assert basic_mcp_stdio.mcp is not None
+    assert auth_mcp_stdio.mcp is not None
 
 
 def test_teamcenter_server_identity():
     """Test server is properly identified for Teamcenter."""
-    import basic_mcp_stdio
+    import auth_mcp_stdio
     
-    assert basic_mcp_stdio.mcp.name == "Teamcenter-KB"
-    assert hasattr(basic_mcp_stdio.mcp, 'run')
-    assert callable(basic_mcp_stdio.mcp.run)
+    assert auth_mcp_stdio.mcp.name == "Teamcenter"
+    assert hasattr(auth_mcp_stdio.mcp, 'run')
+    assert callable(auth_mcp_stdio.mcp.run)
 
 
 def test_stdio_transport_configuration():
     """Test server is configured for stdio transport VS Code needs."""
-    server_path = os.path.join(project_root, 'basic_mcp_stdio.py')
+    server_path = os.path.join(project_root, 'auth_mcp_stdio.py')
     
     with open(server_path, 'r') as f:
         content = f.read()
@@ -78,7 +78,7 @@ data: {"type": "response", "data": " documentation"}'''
 
 def test_teamcenter_tool_descriptions():
     """Test tool descriptions are Teamcenter-specific for LLM discovery."""
-    server_path = os.path.join(project_root, 'basic_mcp_stdio.py')
+    server_path = os.path.join(project_root, 'auth_mcp_stdio.py')
     
     with open(server_path, 'r') as f:
         content = f.read()
@@ -111,7 +111,7 @@ def test_vscode_mcp_configuration():
             for server_name in teamcenter_servers:
                 server_config = servers[server_name]
                 assert server_config.get("type") == "stdio"
-                # Check for either basic_mcp_stdio.py or auth_mcp_stdio.py
+                # Check for either auth_mcp_stdio.py or auth_mcp_stdio.py
                 args_str = str(server_config.get("args", []))
                 assert "mcp_stdio.py" in args_str, f"No MCP stdio server found in args: {args_str}"
 
@@ -128,14 +128,14 @@ def test_required_dependencies():
 
 def test_server_module_structure():
     """Test module structure is correct for VS Code execution."""
-    import basic_mcp_stdio
+    import auth_mcp_stdio
     
     # Should have FastMCP instance
-    assert hasattr(basic_mcp_stdio, 'mcp')
-    assert basic_mcp_stdio.mcp.__class__.__name__ == 'FastMCP'
+    assert hasattr(auth_mcp_stdio, 'mcp')
+    assert auth_mcp_stdio.mcp.__class__.__name__ == 'FastMCP'
     
     # Should have proper FastMCP imports
-    server_path = os.path.join(project_root, 'basic_mcp_stdio.py')
+    server_path = os.path.join(project_root, 'auth_mcp_stdio.py')
     with open(server_path, 'r') as f:
         content = f.read()
     

@@ -23,7 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Create authenticated MCP server
-mcp = FastMCP(name="Teamcenter-KB-Auth")
+mcp = FastMCP(name="Teamcenter")
 
 class AuthSession:
     """Manages authentication session for the MCP server"""
