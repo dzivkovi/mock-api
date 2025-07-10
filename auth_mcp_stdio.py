@@ -13,6 +13,7 @@ import logging
 import sys
 import argparse
 import os
+from teamcenter_auth_session import TeamCenterAuthSession
 
 # Set up debug logging
 logging.basicConfig(
@@ -270,11 +271,11 @@ Examples:
     mcp.tool(teamcenter_session_info)
     
     # Determine base URL from args, env var, or default
-    base_url = args.base_url or os.environ.get('TEAMCENTER_API_URL') or 'http://localhost:8000'
+    base_url = args.base_url or os.environ.get('TEAMCENTER_API_URL') or os.environ.get('TEAMCENTER_API_HOST') or 'http://localhost:8000'
     
-    # Initialize global auth session
+    # Initialize global auth session with hybrid authentication
     global auth_session
-    auth_session = AuthSession(base_url)
+    auth_session = TeamCenterAuthSession(base_url)
     
     # Use STDIO transport - VS Code will manage this process
     mcp.run(transport="stdio")
