@@ -1,19 +1,21 @@
 """
 Authenticated MCP server - STDIO transport with session-based authentication
 This version handles the Azure AD + session cookie authentication flow
+Self-contained version with all dependencies merged
 """
 from fastmcp import FastMCP
 import httpx
 import json
 import asyncio
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict
 import re
 import logging
 import sys
 import argparse
 import os
-from teamcenter_auth_session import TeamCenterAuthSession
+import requests
+from pathlib import Path
 
 # Set up debug logging
 logging.basicConfig(
@@ -25,17 +27,158 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global MCP server - will be initialized in main()
-mcp = None
+# ============================================================================
+# MERGED: CookieAuth class (from cookie_auth_minimal.py)
+# ============================================================================
 
-class AuthSession:
-    """Manages authentication session for the MCP server"""
+class CookieAuth:
+    """Minimal cookie authentication using cached credentials"""
     
-    def __init__(self, base_url: str = "http://127.0.0.1:8000"):
+    def __init__(self, cache_file=None):
+        # Use Windows cache file location by default (for WSL cross-compatibility)
+        if cache_file is None:
+            windows_cache = "/mnt/c/Users/z0052v7s/.teamcenter_easy_auth_cache.json"
+            linux_cache = os.path.expanduser("~/.teamcenter_easy_auth_cache.json")
+            
+            # Prefer Windows cache if available, fallback to standard location
+            if os.path.exists(windows_cache):
+                cache_file = windows_cache
+            else:
+                cache_file = linux_cache
+        
+        self.cache_file = cache_file
+        self.auth_cookie = None
+        self.cookie_expiry = None
+        self.user_info = None
+        self._load_cache()
+    
+    def _load_cache(self):
+        """Load cached auth cookie if available and not expired"""
+        try:
+            cache_path = Path(self.cache_file)
+            if cache_path.exists():
+                with open(cache_path, 'r') as f:
+                    cache = json.load(f)
+                
+                # Check expiry
+                expiry_str = cache.get('expiry')
+                if expiry_str:
+                    expiry = datetime.fromisoformat(expiry_str)
+                    if expiry > datetime.now():
+                        self.auth_cookie = cache.get('cookie')
+                        self.cookie_expiry = expiry
+                        self.user_info = cache.get('user_info', {})
+                        logger.info(f"Loaded valid cookie, expires: {expiry}")
+                        return True
+                    else:
+                        logger.warning(f"Cached cookie expired: {expiry}")
+                else:
+                    logger.warning("No expiry found in cache")
+            else:
+                logger.info(f"Cache file not found: {cache_path}")
+        except Exception as e:
+            logger.error(f"Error loading cache: {e}")
+        
+        return False
+    
+    def has_valid_cookie(self):
+        """Check if we have a valid authentication cookie"""
+        if not self.auth_cookie or not self.cookie_expiry:
+            return False
+        
+        # Check if still valid (with small buffer)
+        return datetime.now() < self.cookie_expiry
+    
+    def get_auth_headers(self):
+        """Get authentication headers for API requests"""
+        if self.has_valid_cookie():
+            return {
+                "Cookie": f"codesess={self.auth_cookie}",
+                "Content-Type": "application/json"
+            }
+        else:
+            raise Exception("No valid authentication cookie available")
+    
+    def get_user_info(self):
+        """Get user information from cache"""
+        return self.user_info or {}
+
+# ============================================================================
+# MERGED: TeamCenterAuthSession class (from teamcenter_auth_session.py)
+# ============================================================================
+
+class TeamCenterAuthSession:
+    """Hybrid authentication session supporting mock and production modes"""
+    
+    def __init__(self, base_url: Optional[str] = None):
+        # Environment variable takes precedence, then parameter, then default
+        self.base_url = base_url or os.getenv("TEAMCENTER_API_HOST", "http://127.0.0.1:8000")
+        self.base_url = self.base_url.rstrip('/')  # Remove trailing slash
+        
+        # Session state
         self.session_cookie: Optional[str] = None
         self.expires_at: Optional[datetime] = None
-        self.base_url = base_url.rstrip('/')  # Remove trailing slash
-        logger.info(f"🔧 AuthSession initialized with base_url: {self.base_url}")
+        
+        # Determine authentication mode based on URL
+        if self.base_url.startswith("https://codesentinel"):
+            self.auth_mode = "cookie"
+            self._init_cookie_auth()
+        else:
+            self.auth_mode = "mock"
+            self._init_mock_auth()
+        
+        logger.info(f"🔧 AuthSession initialized: mode={self.auth_mode}, url={self.base_url}")
+    
+    def _init_cookie_auth(self):
+        """Initialize cookie-based authentication for production"""
+        try:
+            self.cookie_auth = CookieAuth()
+            if not self.cookie_auth.has_valid_cookie():
+                logger.warning("No valid cookie found for production mode")
+                logger.info("💡 Run 'python easy_auth_client.py ask \"test\"' to authenticate")
+                logger.info("🔄 Falling back to mock mode")
+                self._fallback_to_mock()
+            else:
+                # Use the cached cookie for session
+                self.session_cookie = self.cookie_auth.auth_cookie
+                self.expires_at = self.cookie_auth.cookie_expiry
+                logger.info(f"✅ Cookie auth initialized, expires: {self.expires_at}")
+        except Exception as e:
+            logger.error(f"Cookie auth initialization failed: {e}")
+            logger.info("🔄 Falling back to mock mode")
+            self._fallback_to_mock()
+    
+    def _init_mock_auth(self):
+        """Initialize mock authentication for localhost"""
+        # Create a real session with the mock server
+        try:
+            import requests
+            response = requests.post(
+                f"{self.base_url}/api/login",
+                headers={"Authorization": "Bearer mock_token"},
+                timeout=10
+            )
+            if response.status_code == 200:
+                data = response.json()
+                self.session_cookie = data["session_id"]
+                self.expires_at = datetime.fromisoformat(data["expires_at"])
+                logger.info(f"🔧 Mock auth initialized with session: {self.session_cookie[:8]}...")
+            else:
+                # Fallback to basic mock
+                self.session_cookie = "mock_session_cookie"
+                self.expires_at = datetime.now() + timedelta(hours=1)
+                logger.warning("🔧 Mock auth fallback - couldn't create session")
+        except Exception as e:
+            # Fallback to basic mock  
+            self.session_cookie = "mock_session_cookie"
+            self.expires_at = datetime.now() + timedelta(hours=1)
+            logger.warning(f"🔧 Mock auth fallback due to error: {e}")
+    
+    def _fallback_to_mock(self):
+        """Fallback to mock mode when production auth fails"""
+        self.auth_mode = "mock"
+        self.base_url = "http://127.0.0.1:8000"
+        self._init_mock_auth()
     
     def is_session_valid(self) -> bool:
         """Check if current session is still valid (with 5-minute buffer)"""
@@ -49,232 +192,240 @@ class AuthSession:
         logger.debug(f"🔍 Session validity check: {is_valid}, expires at {self.expires_at}")
         return is_valid
     
-    async def authenticate(self) -> bool:
-        """Authenticate and get a new session cookie"""
-        logger.info("🔐 Starting authentication process...")
-        try:
-            async with httpx.AsyncClient() as client:
-                # Use a mock Bearer token (our API accepts any Bearer token)
-                headers = {
-                    "Authorization": "Bearer mcp_server_mock_token_12345",
-                    "Content-Type": "application/json"
-                }
-                logger.debug(f"🔐 Calling {self.base_url}/api/login with headers: {headers}")
-                
-                response = await client.post(
-                    f"{self.base_url}/api/login",
-                    headers=headers
-                )
-                logger.debug(f"🔐 Login response: {response.status_code}")
-                
-                if response.status_code != 200:
-                    logger.error(f"❌ Authentication failed: {response.status_code} - {response.text}")
-                    return False
-                
-                # Extract session cookie from Set-Cookie header
-                set_cookie = response.headers.get('set-cookie')
-                logger.debug(f"🔐 Set-Cookie header: {set_cookie}")
-                if not set_cookie:
-                    logger.error("❌ No Set-Cookie header in login response")
-                    return False
-                
-                # Parse codesess cookie
-                cookie_match = re.search(r'codesess=([^;]+)', set_cookie)
-                if not cookie_match:
-                    logger.error("❌ No codesess cookie found")
-                    return False
-                
-                self.session_cookie = cookie_match.group(1)
-                logger.info(f"🔐 Extracted session cookie: {self.session_cookie[:8]}...")
-                
-                # Parse expiry from JSON response
-                response_data = response.json()
-                logger.debug(f"🔐 Login response data: {response_data}")
-                expires_at_str = response_data.get('expires_at')
-                if expires_at_str:
-                    self.expires_at = datetime.fromisoformat(expires_at_str.replace('Z', '+00:00'))
-                else:
-                    # Fallback: assume 55-minute expiry
-                    self.expires_at = datetime.now() + timedelta(minutes=55)
-                
-                logger.info(f"✅ Authentication successful, session expires at {self.expires_at}")
-                return True
-                
-        except Exception as e:
-            logger.error(f"❌ Authentication error: {e}", exc_info=True)
-            return False
-    
-    async def ensure_authenticated(self) -> bool:
-        """Ensure we have a valid session, authenticate if needed"""
-        if self.is_session_valid():
-            logger.debug("🔍 Session is valid, no authentication needed")
-            return True
+    async def authenticate(self) -> Optional[str]:
+        """Authenticate and return session ID"""
+        if self.auth_mode == "mock":
+            # Mock authentication always succeeds
+            logger.info("🔧 Mock authentication successful")
+            return self.session_cookie
         
-        logger.info("🔐 Session expired or missing, authenticating...")
-        return await self.authenticate()
-    
-    def get_session_headers(self) -> dict:
-        """Get headers with session cookie for authenticated requests"""
-        if not self.session_cookie:
-            return {}
+        elif self.auth_mode == "cookie":
+            if self.is_session_valid():
+                logger.info("✅ Using existing valid session")
+                return self.session_cookie
+            else:
+                logger.warning("❌ Session invalid or expired")
+                # For now, don't try to refresh - require manual re-auth
+                logger.info("💡 Run 'python easy_auth_client.py ask \"test\"' to re-authenticate")
+                return None
         
-        return {
-            "Cookie": f"codesess={self.session_cookie}",
-            "Content-Type": "application/json"
-        }
-
-# Global authentication session - will be initialized in main()
-auth_session = None
-
-async def teamcenter_search(search_query: str, topNDocuments: int = 5) -> str:
-    """Search the Teamcenter knowledge base for technical information and documentation.
+        return None
     
-    This tool automatically handles authentication with the Teamcenter API.
-    """
-    logger.info(f"🔍 MCP Tool called: teamcenter_search('{search_query}', {topNDocuments})")
-    
-    # Ensure we have a valid session
-    if not await auth_session.ensure_authenticated():
-        logger.error("❌ Failed to authenticate with Teamcenter API")
-        return "❌ Failed to authenticate with Teamcenter API"
-    
-    try:
-        async with httpx.AsyncClient() as client:
-            params = {
-                "search_query": search_query,
-                "topNDocuments": topNDocuments
+    async def make_authenticated_request(self, endpoint: str, method: str = "GET", 
+                                       data: Optional[Dict] = None, 
+                                       params: Optional[Dict] = None,
+                                       stream: bool = False) -> Optional[requests.Response]:
+        """Make authenticated request to the API"""
+        # Ensure we have a valid session
+        session_id = await self.authenticate()
+        if not session_id:
+            raise Exception("Authentication failed - no valid session")
+        
+        # Prepare headers
+        if self.auth_mode == "cookie":
+            headers = {
+                "Cookie": f"codesess={self.session_cookie}",
+                "Content-Type": "application/json"
             }
+        else:  # mock mode
+            headers = {
+                "Cookie": f"codesess={self.session_cookie}",
+                "Content-Type": "application/json"
+            }
+        
+        # Construct URL
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        
+        try:
+            logger.debug(f"🌐 {method} {url} (mode: {self.auth_mode})")
             
-            headers = auth_session.get_session_headers()
+            if method.upper() == "GET":
+                response = requests.get(url, headers=headers, params=params, stream=stream, timeout=30)
+            elif method.upper() == "POST":
+                response = requests.post(url, headers=headers, json=data, params=params, stream=stream, timeout=30)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
             
-            response = await client.get(
-                f"{auth_session.base_url}/stream",
-                params=params,
-                headers=headers,
-                timeout=30.0
-            )
+            # Log response status
+            logger.debug(f"📊 Response: {response.status_code}")
             
             # Handle authentication errors
             if response.status_code == 401:
-                print("🔐 Session expired during request, re-authenticating...")
-                if await auth_session.authenticate():
-                    # Retry with new session
-                    headers = auth_session.get_session_headers()
-                    response = await client.get(
-                        f"{auth_session.base_url}/stream",
-                        params=params,
-                        headers=headers,
-                        timeout=30.0
-                    )
-                else:
-                    return "❌ Failed to re-authenticate with Teamcenter API"
+                logger.warning("🔒 Authentication failed (401)")
+                if self.auth_mode == "cookie":
+                    logger.info("💡 Cookie might be expired - run easy_auth_client.py")
+                raise Exception("Authentication failed - 401 Unauthorized")
             
-            if response.status_code != 200:
-                return f"❌ Teamcenter API error: {response.status_code} - {response.text}"
+            return response
             
-            # Parse SSE response and return accumulated content
-            content = []
-            citations = []
-            
-            for line in response.text.split('\n'):
-                if line.startswith('data: '):
-                    try:
-                        data = json.loads(line[6:])
-                        if data.get('type') == 'response':
-                            content.append(data.get('data', ''))
-                        elif data.get('type') == 'citation':
-                            citations.append(data.get('data', ''))
-                    except json.JSONDecodeError:
-                        pass
-            
-            result = ''.join(content)
-            if citations:
-                result += "\n\nCitations:\n" + '\n'.join(citations)
-            
-            return result if result.strip() else "No results found for your query."
-            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"🔥 Request failed: {e}")
+            return None
+    
+    def get_auth_status(self) -> Dict:
+        """Get authentication status for debugging"""
+        return {
+            "auth_mode": self.auth_mode,
+            "base_url": self.base_url,
+            "is_session_valid": self.is_session_valid(),
+            "session_cookie_length": len(self.session_cookie) if self.session_cookie else 0,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+        }
+
+# ============================================================================
+# ORIGINAL: MCP Server Implementation
+# ============================================================================
+
+# Global auth session - will be initialized in main()
+auth_session = None
+
+async def teamcenter_search(search_query: str, 
+                           topNDocuments: int = 5, 
+                           sessionID: str = "default",
+                           llm: str = "gpt-4o-mini",
+                           language: str = "english") -> str:
+    """
+    Search Teamcenter knowledge base with streaming response
+    
+    Args:
+        search_query: The search query to process
+        topNDocuments: Number of top documents to retrieve (1-20)
+        sessionID: Session identifier for the request
+        llm: Language model to use (gpt-4o-mini, gpt-4o, claude-3-5-sonnet-latest)
+        language: Response language (english, german, chinese)
+    
+    Returns:
+        Streaming response with search results and citations
+    """
+    global auth_session
+    
+    if not auth_session:
+        logger.error("Auth session not initialized")
+        return "Error: Authentication session not available"
+    
+    try:
+        # Prepare query parameters
+        params = {
+            "search_query": search_query,
+            "sessionID": sessionID,
+            "topNDocuments": min(max(topNDocuments, 1), 20),  # Clamp between 1-20
+            "llm": llm,
+            "language": language,
+            "subfolder": ""  # Default subfolder
+        }
+        
+        logger.info(f"🔍 Searching: {search_query[:50]}... (session: {sessionID[:8]}...)")
+        
+        # Make streaming request to the search endpoint
+        response = await auth_session.make_authenticated_request(
+            endpoint="stream", 
+            method="GET",
+            params=params  # Pass the query parameters!
+        )
+        
+        if response is None:
+            return "Error: Failed to connect to Teamcenter API"
+        
+        if response.status_code != 200:
+            logger.error(f"Search failed: {response.status_code} - {response.text}")
+            return f"Error: Search failed with status {response.status_code}"
+        
+        # For now, return non-streaming response
+        # TODO: Implement proper streaming when MCP supports it
+        response_text = response.text
+        logger.info(f"✅ Search completed, response length: {len(response_text)}")
+        
+        return response_text
+        
     except Exception as e:
-        return f"❌ Error calling Teamcenter API: {str(e)}"
+        logger.error(f"Search error: {e}")
+        return f"Error during search: {str(e)}"
 
 async def teamcenter_health_check() -> str:
-    """Check if the Teamcenter KB API is healthy and authentication is working"""
+    """
+    Check the health status of the Teamcenter API connection
+    
+    Returns:
+        Health status information
+    """
+    global auth_session
+    
+    if not auth_session:
+        return "Error: Authentication session not available"
+    
     try:
-        # Check basic API health
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{auth_session.base_url}/health", timeout=5.0)
-            if response.status_code != 200:
-                return f"❌ Teamcenter KB API health check failed: {response.status_code}"
+        logger.info("🏥 Performing health check")
         
-        # Check authentication
-        auth_status = await auth_session.ensure_authenticated()
-        if not auth_status:
-            return "❌ Teamcenter KB API is running but authentication failed"
+        # Call the health endpoint
+        response = await auth_session.make_authenticated_request(endpoint="health")
         
-        session_status = "valid" if auth_session.is_session_valid() else "expired"
-        expires_info = f"expires at {auth_session.expires_at}" if auth_session.expires_at else "no expiry info"
+        if response is None:
+            return "❌ Health check failed: No response from API"
         
-        return f"✅ Teamcenter KB API is healthy\n🔐 Authentication: working\n📅 Session: {session_status} ({expires_info})"
-        
+        if response.status_code == 200:
+            health_data = response.json() if response.text else {"status": "ok"}
+            logger.info("✅ Health check passed")
+            return f"✅ Teamcenter API is healthy: {json.dumps(health_data, indent=2)}"
+        else:
+            logger.warning(f"Health check returned status {response.status_code}")
+            return f"⚠️ Health check status: {response.status_code} - {response.text}"
+            
     except Exception as e:
-        return f"❌ Cannot reach Teamcenter KB API: {str(e)}"
+        logger.error(f"Health check error: {e}")
+        return f"❌ Health check failed: {str(e)}"
 
 async def teamcenter_session_info() -> str:
-    """Get current authentication session information"""
-    if not auth_session.session_cookie:
-        return "❌ No active session"
+    """
+    Get information about the current authentication session
     
-    session_id_preview = auth_session.session_cookie[:8] + "..." if len(auth_session.session_cookie) > 8 else auth_session.session_cookie
-    expires_info = str(auth_session.expires_at) if auth_session.expires_at else "unknown"
-    is_valid = "✅ valid" if auth_session.is_session_valid() else "❌ expired"
+    Returns:
+        Session information and authentication status
+    """
+    global auth_session
     
-    return f"🔐 Session ID: {session_id_preview}\n📅 Expires: {expires_info}\n✅ Status: {is_valid}"
+    if not auth_session:
+        return "Error: Authentication session not available"
+    
+    try:
+        auth_status = auth_session.get_auth_status()
+        
+        # Don't expose sensitive session cookie data
+        safe_status = {
+            "auth_mode": auth_status["auth_mode"],
+            "base_url": auth_status["base_url"],
+            "is_session_valid": auth_status["is_session_valid"],
+            "expires_at": auth_status["expires_at"],
+            "has_session_cookie": auth_status["session_cookie_length"] > 0
+        }
+        
+        return f"📊 Session Status:\n{json.dumps(safe_status, indent=2)}"
+        
+    except Exception as e:
+        logger.error(f"Session info error: {e}")
+        return f"Error getting session info: {str(e)}"
 
 def main():
-    """Main entry point for the MCP server with command-line argument support"""
-    parser = argparse.ArgumentParser(
-        description="Teamcenter MCP Server - Authenticated Model Context Protocol server"
-    )
-    parser.add_argument(
-        '--base-url', 
-        type=str,
-        help='Base URL of the Teamcenter API (defaults to TEAMCENTER_API_URL env var or http://localhost:8000)'
-    )
-    parser.add_argument(
-        '--version',
-        action='version',
-        version='teamcenter-mcp-server 0.1.0'
-    )
+    """Main entry point for the MCP server"""
+    global auth_session
     
-    # Add usage examples to help
-    parser.epilog = """
-Examples:
-  # Use with local mock API (default)
-  uv run python auth_mcp_stdio.py
-
-  # Use with production Teamcenter API
-  uv run python auth_mcp_stdio.py --base-url https://teamcenter.company.com
-
-  # Use environment variable
-  export TEAMCENTER_API_URL=https://teamcenter.company.com
-  uv run python auth_mcp_stdio.py
-    """
-    
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Teamcenter MCP Server with Azure AD Authentication')
+    parser.add_argument('--base-url', 
+                       help='Base URL for the Teamcenter API (default: http://localhost:8000)')
     args = parser.parse_args()
     
-    # Initialize MCP server after argument parsing
-    global mcp
-    mcp = FastMCP(name="Teamcenter")
+    # Initialize FastMCP server
+    mcp = FastMCP("Teamcenter Knowledge Base")
     
-    # Re-register tools (since mcp was None when decorators ran)
+    # Register all the tools
     mcp.tool(teamcenter_search)
-    mcp.tool(teamcenter_health_check)
+    mcp.tool(teamcenter_health_check) 
     mcp.tool(teamcenter_session_info)
     
     # Determine base URL from args, env var, or default
     base_url = args.base_url or os.environ.get('TEAMCENTER_API_URL') or os.environ.get('TEAMCENTER_API_HOST') or 'http://localhost:8000'
     
     # Initialize global auth session with hybrid authentication
-    global auth_session
     auth_session = TeamCenterAuthSession(base_url)
     
     # Use STDIO transport - VS Code will manage this process

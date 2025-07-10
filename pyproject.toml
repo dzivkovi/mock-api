@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "teamcenter-mcp-server-test"
-version = "0.1.2"
+version = "0.1.6"
 description = "Authenticated MCP server for Teamcenter Knowledge Base APIs with Azure AD support"
 readme = "README.md"
 requires-python = ">=3.10"

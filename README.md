@@ -1,12 +1,18 @@
 # Teamcenter MCP Server
 
-Universal MCP server for integrating AI assistants with Teamcenter Knowledge Base APIs.
+Universal MCP server for integrating AI assistants with Teamcenter Knowledge Base APIs with Azure AD authentication support.
 
 📦 **Live on PyPI:** https://pypi.org/project/teamcenter-mcp-server-test/
 
+## ✨ What's New in v0.1.2
+- 🔐 **Azure AD Authentication** - Connect to real Teamcenter APIs
+- 🔄 **Hybrid Mode** - Seamless switching between localhost mock and production
+- 🌍 **Environment Variables** - Configure via `TEAMCENTER_API_HOST`
+- 🛡️ **Secure** - Uses cached Azure AD cookies, no secrets in code
+
 ## Quick Start (Just Copy & Paste)
 
-### Continue.dev
+### 🚀 Production Mode (Azure AD)
 Add to `~/.continue/config.json`:
 ```json
 {
@@ -15,14 +21,33 @@ Add to `~/.continue/config.json`:
       "transport": {
         "type": "stdio",
         "command": "uvx",
-        "args": ["teamcenter-mcp-server-test", "--base-url", "http://localhost:8000"]
+        "args": ["teamcenter-mcp-server-test@0.1.2"],
+        "env": {
+          "TEAMCENTER_API_HOST": "https://codesentinel.azurewebsites.net"
+        }
       }
     }]
   }
 }
 ```
 
-### VS Code
+### 🔧 Development Mode (Localhost Mock)
+Add to `~/.continue/config.json`:
+```json
+{
+  "experimental": {
+    "modelContextProtocolServers": [{
+      "transport": {
+        "type": "stdio",
+        "command": "uvx",
+        "args": ["teamcenter-mcp-server-test@0.1.2"]
+      }
+    }]
+  }
+}
+```
+
+### VS Code (Production)
 Add to `.vscode/mcp.json`:
 ```json
 {
@@ -30,24 +55,54 @@ Add to `.vscode/mcp.json`:
     "teamcenter": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["teamcenter-mcp-server-test", "--base-url", "http://localhost:8000"]
+      "args": ["teamcenter-mcp-server-test@0.1.2"],
+      "env": {
+        "TEAMCENTER_API_HOST": "https://codesentinel.azurewebsites.net"
+      }
     }
   }
 }
 ```
 
-### JetBrains IDEs
+### JetBrains IDEs (Production)
 Add to `~/.mcp.json`:
 ```json
 {
   "mcpServers": {
     "teamcenter": {
       "command": "uvx",
-      "args": ["teamcenter-mcp-server-test", "--base-url", "http://localhost:8000"]
+      "args": ["teamcenter-mcp-server-test@0.1.2"],
+      "env": {
+        "TEAMCENTER_API_HOST": "https://codesentinel.azurewebsites.net"
+      }
     }
   }
 }
 ```
+
+## 🔐 Azure AD Authentication Setup
+
+### Prerequisites
+1. **Authenticate first** using the working Python client:
+   ```bash
+   # Run this once to cache Azure AD credentials
+   python /path/to/easy_auth_client.py ask "test"
+   ```
+
+2. **Verify authentication** works:
+   ```bash
+   # Check for cached cookie
+   ls ~/.teamcenter_easy_auth_cache.json
+   ```
+
+### Environment Variables
+- `TEAMCENTER_API_HOST`: API endpoint URL
+  - Production: `https://codesentinel.azurewebsites.net`
+  - Development: `http://localhost:8000` (default)
+
+## 📦 Version History
+- **v0.1.2** (Latest) - Azure AD authentication + hybrid mode
+- **v0.1.1** - Localhost mock only (legacy)
 
 ## Usage
 
