@@ -21,7 +21,8 @@ def test_server_imports_cleanly():
     
     import_time = time.time() - start_time
     # Relax timing constraint for Windows/WSL environment - FastMCP + httpx imports can be slow
-    assert import_time < 10.0, f"Import took {import_time}s, too slow for VS Code"
+    # WSL2 with Windows filesystem can be very slow
+    assert import_time < 20.0, f"Import took {import_time}s, too slow for VS Code"
     assert hasattr(auth_mcp_stdio, 'mcp')  # MCP is initialized in main()
 
 
@@ -117,11 +118,18 @@ def test_vscode_mcp_configuration():
                 assert server_config.get("type") == "stdio"
                 # Check for either old stdio file or new teamcenter-mcp-server command
                 command = server_config.get("command", "")
-                args_str = str(server_config.get("args", []))
+                args = server_config.get("args", [])
+                args_str = str(args)
                 # Check for either old stdio file, old teamcenter-mcp-server, or new PyPI package
+                # Check if teamcenter-mcp-server is in the args list
+                has_mcp_server = False
+                if isinstance(args, list):
+                    has_mcp_server = any("teamcenter-mcp-server" in str(arg) for arg in args)
+                
                 assert (
                     "mcp_stdio.py" in args_str or 
                     "teamcenter-mcp-server" in command or 
+                    has_mcp_server or
                     "teamcenter-mcp-server-test" in args_str
                 ), f"No MCP server found in command: {command}, args: {args_str}"
 

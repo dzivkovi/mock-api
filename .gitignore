@@ -6,6 +6,9 @@
 !.vscode/
 !.vscode/mcp.json
 
+# Claude settings
+.claude/settings.local.json
+
 ### Flask ###
 instance/*
 !instance/.gitignore
@@ -173,4 +176,5 @@ tmp/
 
 # SQLite database files
 *.db
-*.sqlite
+*.sqlite.env
+.azure_token
