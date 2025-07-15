@@ -129,3 +129,40 @@ def test_security_no_hardcoded_secrets():
     
     for secret in forbidden_strings:
         assert secret not in content, f"Found hardcoded secret: {secret}"
+
+@pytest.mark.asyncio
+async def test_cookie_authentication():
+    """Test that CODESESS_COOKIE environment variable is used for authentication"""
+    import auth_mcp_stdio_v2
+    import os
+    
+    # Save original values
+    original_cookie = os.environ.get("CODESESS_COOKIE")
+    original_host = os.environ.get("TEAMCENTER_API_HOST")
+    
+    try:
+        # Set test values
+        os.environ["CODESESS_COOKIE"] = "test_cookie_12345"
+        os.environ["TEAMCENTER_API_HOST"] = "https://codesentinel.azurewebsites.net"
+        
+        # Create new auth session
+        auth_session = auth_mcp_stdio_v2.AuthSession()
+        
+        # Test authentication
+        session = await auth_session.authenticate()
+        
+        assert session == "test_cookie_12345"
+        assert auth_session.is_session_valid()
+        assert auth_session.auth_mode == "production"
+        
+    finally:
+        # Restore original values
+        if original_cookie:
+            os.environ["CODESESS_COOKIE"] = original_cookie
+        else:
+            os.environ.pop("CODESESS_COOKIE", None)
+        
+        if original_host:
+            os.environ["TEAMCENTER_API_HOST"] = original_host
+        else:
+            os.environ.pop("TEAMCENTER_API_HOST", None)

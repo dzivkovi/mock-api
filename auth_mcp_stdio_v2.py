@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Create MCP server instance with name
 mcp = FastMCP("teamcenter-mcp-server")
-mcp.version = "0.2.0"  # Set version as attribute
+mcp.version = "0.2.1"  # Set version as attribute
 
 class AuthSession:
     """Manages authentication for CodeSentinel API"""
@@ -84,11 +84,20 @@ class AuthSession:
     
     async def _azure_authenticate(self) -> Optional[str]:
         """Azure AD authentication for production"""
-        # For now, check if we have a bearer token in environment
+        # First check if we have a direct cookie
+        codesess_cookie = os.getenv("CODESESS_COOKIE")
+        if codesess_cookie:
+            logger.info("🍪 Using CODESESS_COOKIE from environment")
+            self.session_cookie = codesess_cookie
+            self.expires_at = datetime.now() + timedelta(minutes=55)
+            logger.info(f"✅ Cookie auth successful: {self.session_cookie[:8]}...")
+            return self.session_cookie
+        
+        # Otherwise, check if we have a bearer token in environment
         bearer_token = os.getenv("AZURE_BEARER_TOKEN")
         if not bearer_token:
-            logger.error("❌ No AZURE_BEARER_TOKEN environment variable set")
-            logger.info("💡 To get a token: Use VS Code extension or Azure CLI")
+            logger.error("❌ No CODESESS_COOKIE or AZURE_BEARER_TOKEN environment variable set")
+            logger.info("💡 To authenticate: Set CODESESS_COOKIE or AZURE_BEARER_TOKEN")
             return None
         
         try:
@@ -254,7 +263,8 @@ async def session_info() -> str:
         info["azure_config"] = {
             "client_id": auth_session.client_id,
             "tenant_id": auth_session.tenant_id,
-            "bearer_token_set": bool(os.getenv("AZURE_BEARER_TOKEN"))
+            "bearer_token_set": bool(os.getenv("AZURE_BEARER_TOKEN")),
+            "codesess_cookie_set": bool(os.getenv("CODESESS_COOKIE"))
         }
     
     if auth_session.is_session_valid() and auth_session.expires_at:
@@ -265,7 +275,7 @@ async def session_info() -> str:
 
 def main():
     """Main entry point for the MCP server"""
-    logger.info("🚀 Starting Teamcenter MCP Server v0.2.0")
+    logger.info(f"🚀 Starting Teamcenter MCP Server v{mcp.version}")
     logger.info(f"📍 API Host: {auth_session.base_url}")
     logger.info(f"🔧 Auth Mode: {auth_session.auth_mode}")
     
