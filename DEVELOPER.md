@@ -23,7 +23,7 @@ Create `~/.pypirc`:
 
 ```bash
 # 1. Bump version in pyproject.toml
-# Edit: version = "0.1.2" (increment as needed)
+# Edit: version = "0.2.0" (increment as needed)
 
 # 2. Clean build
 rm -rf dist/ && uv build
@@ -32,11 +32,11 @@ rm -rf dist/ && uv build
 TOKEN=$(grep password ~/.pypirc | sed 's/.*= //') && uv publish --token "$TOKEN"
 ```
 
-**That's it!** Package is live at https://pypi.org/project/teamcenter-mcp-server-test/
+**That's it!** Package is live at https://pypi.org/project/teamcenter-mcp-server/
 
 ## Version Strategy
 
-- **Patch** (0.1.X): Bug fixes, documentation updates
+- **Patch** (0.2.X): Bug fixes, documentation updates
 - **Minor** (0.X.0): New features, API additions  
 - **Major** (X.0.0): Breaking changes
 
@@ -44,7 +44,7 @@ TOKEN=$(grep password ~/.pypirc | sed 's/.*= //') && uv publish --token "$TOKEN"
 
 Test the published package:
 ```bash
-uvx teamcenter-mcp-server-test --version
+uvx teamcenter-mcp-server --version
 ```
 
 ## Troubleshooting
@@ -57,7 +57,7 @@ uvx teamcenter-mcp-server-test --version
 
 - `pyproject.toml`: Version number and package config
 - `README.md`: Shows on PyPI page
-- `auth_mcp_stdio.py`: Main code
+- `auth_mcp_stdio_v2.py`: Main code
 - `~/.pypirc`: Your PyPI credentials (local only)
 
 **Remember**: Every PyPI release is permanent. Test locally first!

@@ -3,7 +3,7 @@
     "teamcenter": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["teamcenter-mcp-server-test", "--base-url", "http://localhost:8000"]
+      "args": ["teamcenter-mcp-server", "--base-url", "http://localhost:8000"]
     },
     "sqlite": {
       "type": "stdio",

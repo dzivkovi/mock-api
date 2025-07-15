@@ -2,9 +2,9 @@
 
 Universal MCP server for integrating AI assistants with Teamcenter Knowledge Base APIs with Azure AD authentication support.
 
-📦 **Live on PyPI:** https://pypi.org/project/teamcenter-mcp-server-test/
+📦 **Live on PyPI:** https://pypi.org/project/teamcenter-mcp-server/
 
-## ✨ What's New in v0.1.2
+## ✨ What's New in v0.2.0
 - 🔐 **Azure AD Authentication** - Connect to real Teamcenter APIs
 - 🔄 **Hybrid Mode** - Seamless switching between localhost mock and production
 - 🌍 **Environment Variables** - Configure via `TEAMCENTER_API_HOST`
@@ -21,7 +21,7 @@ Add to `~/.continue/config.json`:
       "transport": {
         "type": "stdio",
         "command": "uvx",
-        "args": ["teamcenter-mcp-server-test@0.1.2"],
+        "args": ["teamcenter-mcp-server@0.2.0"],
         "env": {
           "TEAMCENTER_API_HOST": "https://codesentinel.azurewebsites.net"
         }
@@ -55,7 +55,7 @@ Add to `.vscode/mcp.json`:
     "teamcenter": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["teamcenter-mcp-server-test@0.1.2"],
+      "args": ["teamcenter-mcp-server@0.2.0"],
       "env": {
         "TEAMCENTER_API_HOST": "https://codesentinel.azurewebsites.net"
       }
@@ -71,7 +71,7 @@ Add to `~/.mcp.json`:
   "mcpServers": {
     "teamcenter": {
       "command": "uvx",
-      "args": ["teamcenter-mcp-server-test@0.1.2"],
+      "args": ["teamcenter-mcp-server@0.2.0"],
       "env": {
         "TEAMCENTER_API_HOST": "https://codesentinel.azurewebsites.net"
       }
@@ -101,7 +101,8 @@ Add to `~/.mcp.json`:
   - Development: `http://localhost:8000` (default)
 
 ## 📦 Version History
-- **v0.1.2** (Latest) - Azure AD authentication + hybrid mode
+- **v0.2.0** (Latest) - Azure AD authentication + hybrid mode
+- **v0.1.2** - Azure AD authentication + hybrid mode
 - **v0.1.1** - Localhost mock only (legacy)
 
 ## Usage
@@ -116,14 +117,14 @@ Quick examples:
 
 Replace `http://localhost:8000` with your real Teamcenter API:
 ```json
-"args": ["teamcenter-mcp-server-test", "--base-url", "https://teamcenter.yourcompany.com"]
+"args": ["teamcenter-mcp-server", "--base-url", "https://teamcenter.yourcompany.com"]
 ```
 
 ## Testing
 
 ### Quick Test
 ```bash
-uvx teamcenter-mcp-server-test --version
+uvx teamcenter-mcp-server --version
 ```
 
 ### Demo/Development Setup
@@ -163,7 +164,7 @@ uv run pytest tests/ -v
 **→ [See DEVELOPER.md for release instructions](DEVELOPER.md) ←**
 
 ### Files Overview
-- `auth_mcp_stdio.py`: Main MCP server
+- `auth_mcp_stdio_v2.py`: Main MCP server with optimized imports
 - `main.py`: Mock API server for development
 - `pyproject.toml`: Package configuration
 

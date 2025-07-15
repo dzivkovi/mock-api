@@ -1,6 +1,6 @@
 # Project Progress Status
 
-**Current Version:** v0.1.6  
+**Current Version:** v0.2.0  
 **Status:** BLOCKED - Continue.dev Tool Call Fragmentation Issue  
 **Last Updated:** 2025-07-10
 
@@ -42,7 +42,7 @@
 ### Working Components
 - **Authentication:** Both mock and Azure AD modes working
 - **API Calls:** Proper query parameters and streaming responses
-- **Packaging:** Self-contained v0.1.6 published to PyPI
+- **Packaging:** Self-contained v0.2.0 published to PyPI
 - **Integration:** Continue.dev MCP integration functional
 
 ### File Structure (Cleaned)
@@ -56,7 +56,7 @@ mock-api/
 ├── docs/analysis/             # Research and findings
 ├── examples/                  # Integration examples
 ├── tests/                     # Unit tests
-└── dist/                      # v0.1.6 distribution files
+└── dist/                      # v0.2.0 distribution files
 ```
 
 ## 🎯 Areas for Improvement
@@ -153,7 +153,7 @@ mock-api/
 ## 📋 Commit Checkpoint Summary
 
 **This WIP commit represents:**
-- ✅ Authentication fully working (v0.1.6 published)  
+- ✅ Authentication fully working (v0.2.0 published)  
 - ✅ Cleaned experimental files and organized progress
 - ✅ Documented Continue.dev tool fragmentation blocker
 - ✅ Self-contained MCP server ready for debugging

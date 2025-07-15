@@ -279,13 +279,16 @@ class TeamCenterAuthSession:
 # Global auth session - will be initialized in main()
 auth_session = None
 
+# Global MCP instance - will be initialized in main()
+mcp = None
+
 async def teamcenter_search(search_query: str, 
                            topNDocuments: int = 5, 
                            sessionID: str = "default",
                            llm: str = "gpt-4o-mini",
                            language: str = "english") -> str:
     """
-    Search Teamcenter knowledge base with streaming response
+    Search Teamcenter knowledge base for technical information and documentation with streaming response
     
     Args:
         search_query: The search query to process
@@ -406,7 +409,7 @@ async def teamcenter_session_info() -> str:
 
 def main():
     """Main entry point for the MCP server"""
-    global auth_session
+    global auth_session, mcp
     
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Teamcenter MCP Server with Azure AD Authentication')

@@ -106,9 +106,11 @@ The application consists of a single FastAPI module (`main.py`) with:
 The repository includes two MCP (Model Context Protocol) server implementations:
 
 ### Files
-- `auth_mcp_stdio.py`: Production-ready authenticated MCP server with session management
+- `auth_mcp_stdio_v2.py`: Main MCP server with optimized imports and Azure AD support
+- `auth_mcp_stdio.py`: Legacy MCP server (kept for backward compatibility)
 - `tests/test_auth_flow.py`: Tests for authentication system
-- `tests/test_teamcenter_mcp_stdio.py`: Tests for authenticated MCP server
+- `tests/test_teamcenter_mcp_stdio.py`: Tests for MCP server functionality
+- `tests/test_mcp_integration.py`: Integration tests for real API
 
 ### Architecture Decision
 Single authenticated server approach:
